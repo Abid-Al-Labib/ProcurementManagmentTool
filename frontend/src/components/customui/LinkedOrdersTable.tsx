@@ -2,71 +2,102 @@ import { OrderedPart } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import LinkedOrdersRow from './LinkedOrdersRow';
+import SearchAndFilter from './SearchAndFilter';
+import { useState } from 'react';
 
-interface LinkedOrdersTableProp {
+interface LinkedOrdersTableProps {
     linkedOrderedParts: OrderedPart[];
-    searchQuery?: string;
-    selectedDate?: Date;
-    selectedMachineId?: number;
-    selectedFactoryId?: number; // New prop for Factory ID
-    selectedFactorySectionId?: number; // New prop for Factory Section ID
 }
 
-const LinkedOrdersTable: React.FC<LinkedOrdersTableProp> = ({
-    linkedOrderedParts,
-    searchQuery,
-    selectedDate,
-    selectedMachineId,
-    selectedFactoryId,
-    selectedFactorySectionId,
-}) => {
-    // Logging initial props
-    console.log('LinkedOrdersTable - Initial Props:', {
-        linkedOrderedParts,
-        searchQuery,
-        selectedDate,
-        selectedMachineId,
-        selectedFactoryId,
-        selectedFactorySectionId,
+const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedParts }) => {
+    const [filters, setFilters] = useState({
+        searchQuery: '',
+        selectedDate: undefined as Date | undefined,
+        selectedFactoryId: -1,
+        selectedFactorySectionId: -1,
+        selectedMachineId: -1,
+        selectedDepartmentId: -1,
+        selectedStatusId: -1,
     });
 
-    // Filter the linkedOrderedParts based on searchQuery, selectedDate, and selectedMachineId
+    const handleApplyFilters = (newFilters: typeof filters) => {
+        setFilters(newFilters);
+        console.log('Applied Filters:', newFilters); // Debug log for applied filters
+    };
+
+    const handleResetFilters = () => {
+        const resetFilters = {
+            searchQuery: '',
+            selectedDate: undefined,
+            selectedFactoryId: -1,
+            selectedFactorySectionId: -1,
+            selectedMachineId: -1,
+            selectedDepartmentId: -1,
+            selectedStatusId: -1,
+        };
+        setFilters(resetFilters);
+        console.log('Reset Filters:', resetFilters); // Debug log for reset filters
+    };
+
     const filteredParts = linkedOrderedParts.filter((part) => {
-        const matchesQuery = searchQuery ? part.order_id.toString() === searchQuery : true;
-        const matchesDate = selectedDate
-            ? new Date(part.orders.created_at).toDateString() === selectedDate.toDateString()
-            : true;
-        const matchesMachineId = selectedMachineId ? part.orders.machine_id === selectedMachineId : true;
-        const matchesFactoryId = selectedFactoryId ? part.orders.factory_id === selectedFactoryId : true;
-        const matchesFactorySectionId = selectedFactorySectionId
-            ? part.orders.factory_section_id === selectedFactorySectionId
+        const matchesQuery = filters.searchQuery
+            ? part.order_id.toString() === filters.searchQuery
             : true;
 
-        // Log each condition for debugging
-        console.log('Filtering Part:', {
-            part,
-            matchesQuery,
-            matchesDate,
-            matchesMachineId,
-            matchesFactoryId,
-            matchesFactorySectionId,
-            result: matchesQuery && matchesDate && matchesMachineId && matchesFactoryId && matchesFactorySectionId,
-        });
+        const matchesDate = filters.selectedDate
+            ? new Date(part.orders.created_at).toDateString() === filters.selectedDate.toDateString()
+            : true;
 
-        return matchesQuery && matchesDate && matchesMachineId && matchesFactoryId && matchesFactorySectionId;
+        console.log("TESTING MATCHES FACTORY", filters.selectedFactoryId);
+
+        const matchesFactory = (filters.selectedFactoryId !== -1 && filters.selectedFactoryId !== undefined)
+            ? part.orders.factory_id === filters.selectedFactoryId
+            : true;
+
+        const matchesFactorySection = (filters.selectedFactorySectionId !== -1 && filters.selectedFactorySectionId !== undefined)
+            ? part.orders.factory_section_id === filters.selectedFactorySectionId
+            : true;
+
+        const matchesMachineId = (filters.selectedMachineId !== -1 && filters.selectedMachineId !== undefined)
+            ? part.orders.machine_id === filters.selectedMachineId
+            : true;
+
+        console.log("matchesFactory:", matchesFactory); // Log to see the state of matchesFactory
+
+        return (
+            matchesQuery &&
+            matchesDate &&
+            matchesFactory &&
+            matchesFactorySection &&
+            matchesMachineId
+        );
     });
 
-    // Logging the filtered parts
-    console.log('Filtered Parts:', filteredParts);
+    console.log('Filtered Parts:', filteredParts); // Debug log for filtered parts
 
-    return (
+        return (
         <div>
             <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
-                <CardHeader>
-                    <CardTitle>Linked Orders</CardTitle>
-                    <CardDescription>
-                        This is a list of orders that are linked to this part.
-                    </CardDescription>
+                <CardHeader className="flex justify-between ">
+                        <div>
+                            <CardTitle>Linked Orders</CardTitle>
+                            <CardDescription>
+                                This is a list of orders that are linked to this part.
+                            </CardDescription>
+                        </div>
+                        <div className="ml-auto"> {/* Use ml-auto to push the button to the right */}
+                            <SearchAndFilter
+                                filterConfig={[
+                                    { type: 'id', label: 'Enter Order ID' },
+                                    { type: 'date', label: 'Select Date' },
+                                    { type: 'factory', label: 'Factory' },
+                                    { type: 'factorySection', label: 'Factory Section' },
+                                    { type: 'machine', label: 'Machine' },
+                                ]}
+                                onApplyFilters={handleApplyFilters}
+                                onResetFilters={handleResetFilters}
+                            />
+                        </div>
                 </CardHeader>
 
                 <CardContent>

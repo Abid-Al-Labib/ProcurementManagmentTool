@@ -9,10 +9,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import SearchAndFilter from "@/components/customui/SearchAndFilter"; // Import SearchAndFilter component
-import { fetchFactories } from "@/services/FactoriesService";
-
-
 
 const ViewPartPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,15 +16,6 @@ const ViewPartPage = () => {
   const [linkedOrderedParts, setLinkedOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingPartInfo, setLoadingPartInfo] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
-
-  // Add states for search filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'id' | 'date'>('id'); // Toggle between ID and Date search
-  const [tempDate, setTempDate] = useState<Date | undefined>(undefined);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
-  const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
-  const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
 
   const navigate = useNavigate();
 
@@ -42,8 +29,6 @@ const ViewPartPage = () => {
       const part_id = parseInt(id);
       try {
         const part_data = await fetchPartByID(part_id);
-        console.log('Fetched Part Data:', part_data); // Log part data
-
         if (part_data && part_data.length > 0) {
           setParts(part_data);
         } else {
@@ -61,8 +46,6 @@ const ViewPartPage = () => {
 
       try {
         const linked_ordered_parts_data = await fetchOrderedPartByPartID(part_id);
-        console.log('Fetched Linked Ordered Parts Data:', linked_ordered_parts_data); // Log linked ordered parts data
-
         setLinkedOrderedParts(linked_ordered_parts_data);
 
       } catch (error) {
@@ -73,21 +56,6 @@ const ViewPartPage = () => {
     };
     loadParts();
   }, [id, navigate]);
-
-  
-
-  const handleApplyFilters = () => {
-    setSearchQuery(searchType === 'id' ? searchQuery : '');
-    setSelectedDate(searchType === 'date' ? tempDate : undefined);
-  };
-
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setSelectedDate(undefined);
-    setTempDate(undefined);
-    setSelectedMachineId(undefined);
-    setSearchType('id');
-  };
 
   if (loadingPartInfo) {
     return (
@@ -106,32 +74,6 @@ const ViewPartPage = () => {
   return (
     <div className="flex w-full flex-col bg-muted/40 mt-2">
       <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
-
-        <SearchAndFilter
-          filterConfig={[
-            { type: 'id', label: 'Enter Order ID' },
-            { type: 'date', label: 'Select Date' },
-            { type: 'factory', label: 'Factory' },
-            { type: 'factorySection', label: 'Factory Section' },
-            { type: 'machine', label: 'Machine' },
-          ]}
-          searchType={searchType}
-          setSearchType={setSearchType}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          tempDate={tempDate}
-          setTempDate={setTempDate}
-          selectedFactoryId={selectedFactoryId}
-          setSelectedFactoryId={setSelectedFactoryId}
-          selectedFactorySectionId={selectedFactorySectionId}
-          setSelectedFactorySectionId={setSelectedFactorySectionId}
-          selectedMachineId={selectedMachineId}
-          setSelectedMachineId={setSelectedMachineId}
-          handleDateChange={handleApplyFilters}
-          onApplyFilters={handleApplyFilters}
-          onResetFilters={handleResetFilters}
-        />
-
         <div>
           <PartInfo
             id={parts[0].id}
@@ -150,12 +92,8 @@ const ViewPartPage = () => {
         ) : (
           <LinkedOrdersTable
             linkedOrderedParts={linkedOrderedParts}
-            searchQuery={searchQuery}
-            selectedDate={selectedDate}
-            selectedMachineId={selectedMachineId}
           />
         )}
-
       </main>
       <div className="flex justify-end">
         <div className="my-3 mx-3">
