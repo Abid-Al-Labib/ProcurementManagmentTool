@@ -32,7 +32,7 @@ export const fetchMachineParts = async (
     }
 
     // Execute the query
-    const { data, error } = await query;
+    const { data, error } = await query.order('id',{ascending: true});
 
     // Handle any errors
     if (error) {
@@ -122,10 +122,10 @@ export const addMachinePartQty = async (
     }
 };
 
-export const updateRequiredQuantity = async (partId: number, newQty: number) => {
+export const updateRequiredQuantity = async (partId: number, newCurQty: number, newReqQty: number) => {
     const { error } = await supabase_client
         .from('machine_parts')
-        .update({ req_qty: newQty })
+        .update({ qty: newCurQty, req_qty: newReqQty })
         .eq('id', partId);
 
     if (error) {

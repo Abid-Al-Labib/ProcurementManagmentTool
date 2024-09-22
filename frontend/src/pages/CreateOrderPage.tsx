@@ -12,7 +12,7 @@ import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
-import { fetchMachines } from "@/services/MachineServices"
+import { fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"
@@ -288,6 +288,10 @@ const CreateOrderPage = () => {
                 setOrderedParts([]); 
 
                 await InsertStatusTracker((new Date()), orderId, 1, 1);
+                if (orderType == "Machine") {
+                    setMachineIsRunningById(selectedMachineId,false);
+                }
+
 
             } else {
                 toast.error("Failed to create order.");

@@ -19,15 +19,14 @@ interface MachinePartsRowProps {
     MachinePart: MachinePart;
 }
 
-
-
 const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
     const [isEditing, setIsEditing] = useState(false);
+    const [newCurQty, setNewCurQty] = useState<number>(MachinePart.qty);
     const [newReqQty, setNewReqQty] = useState<number>(MachinePart.req_qty);
 
     const handleUpdate = async () => {
         try {
-            await updateRequiredQuantity(MachinePart.id, newReqQty);
+            await updateRequiredQuantity(MachinePart.id, newCurQty, newReqQty);
             setIsEditing(false); 
             MachinePart.req_qty = newReqQty; // Directly update the MachinePart object with the new quantity
         } catch (error) {
@@ -40,7 +39,17 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
         <TableRow key={MachinePart.id}>
             <TableCell>{MachinePart.part_id}</TableCell>
             <TableCell>{MachinePart.part_name}</TableCell>
-            <TableCell>{MachinePart.qty}</TableCell>
+            <TableCell>
+                {isEditing ? (
+                <input
+                    type="number"
+                    value={newCurQty}
+                        onChange={(e) => setNewCurQty(Number(e.target.value))}
+                    className="border p-1 rounded w-20"
+                />
+            ) : (
+                MachinePart.qty
+            )}</TableCell>
             <TableCell>
                 {isEditing ? (
                     <input

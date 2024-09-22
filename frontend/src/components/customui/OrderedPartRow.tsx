@@ -20,7 +20,6 @@ import { InsertStatusTracker } from "@/services/StatusTrackerService"
 import { Textarea } from "../ui/textarea"
 import { fetchStoragePartQuantityByFactoryID, upsertStoragePart, addStoragePartQty } from "@/services/StorageService"
 import { addMachinePartQty } from "@/services/MachinePartsService"
-import { setMachineIsRunning } from "@/services/MachineServices"
 
 
 interface OrderedPartRowProp{
@@ -102,7 +101,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     approvePartFromFactory();
     setIsApproveFromFactoryDialogOpen(false);
     setIsActionMenuOpen(false);
-    handleMachineIsRunningHelper(false);
   }
 
   const handleApproveTakingFromStorage = () => {
@@ -375,7 +373,6 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
       }
     }
     updateReceivedDate();
-    handleMachineIsRunningHelper(true);
     setIsReceivedDialogOpen(false);
     setIsActionMenuOpen(false);
   }
@@ -406,12 +403,7 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
     setIsActionMenuOpen(false);
   }
 
-  const handleMachineIsRunningHelper = (flag:boolean) => {
-    console.log("In handleMachineIsRunning");
-    if(order_type==="Machine"){
-      setMachineIsRunning(machine_id, flag);
-    }
-  }
+
 
   if(mode==='view'){
     return (

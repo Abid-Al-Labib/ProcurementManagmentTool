@@ -232,3 +232,33 @@ export const insertOrderStorage = async (
     toast.success("Order successfully created");
     return data as unknown as Order[];
 };
+
+export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
+    const { data, error } = await supabase_client.from('orders').
+        select(
+            `
+            id,
+            created_at,
+            order_note,
+            created_by_user_id,
+            department_id,
+            current_status_id,
+            factory_id,
+            machine_id,
+            factory_section_id,
+            order_type,
+            departments(*),
+            profiles(*),
+            statuses(*),
+            factory_sections(*),
+            factories(*),
+            machines(*)
+        `
+    ).eq('machine_id', machine_id)
+        .neq('current_status_id', 8)
+    if (error) {
+        toast.error(error.message)
+    }
+    console.log(data)
+    return data as unknown as Order[];
+}

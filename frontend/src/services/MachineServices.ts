@@ -30,7 +30,7 @@ export const fetchMachineById = async (machineId: number) => {
     return data as Machine;
 };
 
-export const setMachineIsRunning = async (machineId: number, isRunning: boolean) => {
+export const setMachineIsRunningById = async (machineId: number, isRunning: boolean) => {
     const { data, error } = await supabase_client
         .from('machines')
         .update({ is_running: isRunning })

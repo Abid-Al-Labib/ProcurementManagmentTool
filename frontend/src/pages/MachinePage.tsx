@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { fetchFactories, fetchFactorySections} from "@/services/FactoriesService";
+import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
 import { fetchMachineParts } from "@/services/MachinePartsService";
-import { fetchMachines, fetchMachineById } from "@/services/MachineServices";
+import { fetchMachines, fetchMachineById, setMachineIsRunningById } from "@/services/MachineServices";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import MachinePartsTable from "@/components/customui/MachinePartsTable";
@@ -12,9 +12,8 @@ import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Machine } from "@/types";
-import MachineStatus from "@/components/customui/MachineStatus"; // Import the MachineStatus component
-
-
+import MachineStatus from "@/components/customui/MachineStatus";
+import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 
 type MachinePart = {
   id: number;
@@ -36,7 +35,7 @@ const MachinePartsPage = () => {
   const [selectedFactoryId, setSelectedFactoryId] = useState<number | undefined>(undefined);
   const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
   const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
-  const [selectedMachine, setSelectedMachine] = useState<Machine>(); // Use the existing Machine type
+  const [selectedMachine, setSelectedMachine] = useState<Machine>();
 
   useEffect(() => {
     // Fetch factories when the component mounts
@@ -48,7 +47,6 @@ const MachinePartsPage = () => {
         toast.error("Failed to load factories");
       }
     };
-
     loadFactories();
   }, []);
 
@@ -59,7 +57,6 @@ const MachinePartsPage = () => {
         setFactorySections([]);
         return;
       }
-
       try {
         const fetchedSections = await fetchFactorySections(selectedFactoryId);
         setFactorySections(fetchedSections);
@@ -67,38 +64,32 @@ const MachinePartsPage = () => {
         toast.error("Failed to load factory sections");
       }
     };
-
     loadFactorySections();
   }, [selectedFactoryId]);
 
   useEffect(() => {
     const loadMachines = async () => {
-      // Check if selectedFactorySectionId is not undefined and not -1
       if (selectedFactorySectionId !== undefined && selectedFactorySectionId !== -1) {
         try {
           const fetchedMachines = await fetchMachines(selectedFactorySectionId);
           setMachines(fetchedMachines);
-          setSelectedMachineId(-1); // Reset machine ID when the section changes
-          setTimeout(() => setSelectedMachineId(-1), 0); // Clear and reset
+          setSelectedMachineId(-1);
         } catch (error) {
           toast.error("Failed to load machines");
         }
       } else {
         setMachines([]);
-        setSelectedMachineId(-1); // Reset if no section is selected
+        setSelectedMachineId(-1);
       }
     };
-
     loadMachines();
   }, [selectedFactorySectionId]);
-  
 
   useEffect(() => {
-    // Load machine parts when a machine is selected
     const loadParts = async () => {
       if (selectedMachineId === undefined) {
         setMachineParts([]);
-        setLoading(false); // Ensure loading is set to false if no machine is selected
+        setLoading(false);
         return;
       }
 
@@ -110,8 +101,6 @@ const MachinePartsPage = () => {
           filters.partNameQuery || undefined
         );
 
-        console.log(fetchedParts);
-
         const processedParts = fetchedParts.map((record: any) => ({
           id: record.id,
           machine_id: record.machine_id,
@@ -120,7 +109,6 @@ const MachinePartsPage = () => {
           part_name: record.parts.name,
           qty: record.qty,
           req_qty: record.req_qty ?? 0,
-          
         }));
 
         setMachineParts(processedParts);
@@ -130,10 +118,38 @@ const MachinePartsPage = () => {
         setLoading(false);
       }
     };
-
     loadParts();
   }, [selectedMachineId, filters]);
 
+  // New function to handle machine selection
+  const handleSelectMachine = async (value: string) => {
+    const machineId = value === "" ? undefined : Number(value);
+    setSelectedMachineId(machineId);
+    setMachineParts([]);
+
+    console.log("inHandleMachine");
+
+    if (machineId) {
+      try {
+        const runningOrders = await fetchRunningOrdersByMachineId(machineId);
+
+        if (runningOrders.length === 0) {
+          console.log("in running orders check");
+          await setMachineIsRunningById(machineId, true);
+        }
+
+        const machine = await fetchMachineById(machineId);
+        if (machine) {
+          setSelectedMachine(machine);
+        }
+      } catch (error) {
+        console.error("Error fetching machine or running orders:", error);
+        setSelectedMachine(undefined);
+      }
+    } else {
+      setSelectedMachine(undefined);
+    }
+  };
 
   if (loading) {
     return (
@@ -216,26 +232,7 @@ const MachinePartsPage = () => {
                   <Label className="mb-2">Select Machine</Label>
                   <Select
                     value={selectedMachineId === undefined ? "" : selectedMachineId.toString()}
-                    onValueChange={async (value) => {
-                      setSelectedMachineId(value === "" ? undefined : Number(value));
-                      setMachineParts([]);
-
-                      if (selectedMachineId !== undefined) {
-                        try {
-                          const machine = await fetchMachineById(selectedMachineId); // Fetch machine details by ID
-                          if (machine) {
-                            setSelectedMachine(machine); // Set the selected machine state if not null
-                          } else {
-                            setSelectedMachine(undefined); // Set to undefined if the machine is null
-                          }
-                        } catch (error) {
-                          console.error("Error fetching machine:", error);
-                          setSelectedMachine(undefined); // Reset in case of error
-                        }
-                      } else {
-                        setSelectedMachine(undefined); // Reset if no machine is selected
-                      }
-                    }}
+                    onValueChange={handleSelectMachine} // Use the new function
                   >
                     <SelectTrigger className="w-[220px] mt-2">
                       <SelectValue>
