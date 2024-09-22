@@ -11,7 +11,8 @@ import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { fetchFactories, fetchFactorySections, fetchMachines, fetchDepartments } from '@/services/FactoriesService';
+import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
+import { fetchMachines } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchParts } from "@/services/PartsService"
 import { Part } from "@/types"

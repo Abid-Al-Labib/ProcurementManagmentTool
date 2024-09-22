@@ -15,7 +15,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { fetchFactories, fetchFactorySections, fetchMachines, fetchDepartments } from '@/services/FactoriesService';
+import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
+import { fetchMachines } from '@/services/MachineServices';
 import { fetchStatuses } from '@/services/StatusesService';
 
 interface Department {

@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { supabase_client } from "./SupabaseClient";
 
+
 export const fetchMachineParts = async (
     machineId?: number,
     partId?: number,
@@ -11,8 +12,10 @@ export const fetchMachineParts = async (
         .select(`
       id,
       qty,
+      req_qty,
       machine_id,
-      parts (*)
+      parts (*),
+      machines(*)
     `);
 
     // Add machine ID filter if provided
@@ -117,4 +120,18 @@ export const addMachinePartQty = async (
     } else {
         toast.success("Machine part quantity updated successfully!");
     }
+};
+
+export const updateRequiredQuantity = async (partId: number, newQty: number) => {
+    const { error } = await supabase_client
+        .from('machine_parts')
+        .update({ req_qty: newQty })
+        .eq('id', partId);
+
+    if (error) {
+        toast.error('Error updating required quantity: ' + error.message);
+        throw error; // Throw error to handle it in the component
+    }
+
+    toast.success('Required quantity updated successfully.');
 };
