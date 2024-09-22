@@ -72,7 +72,7 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
         <div className="p-6 border rounded-lg bg-gray-100 shadow-md w-1/2">
             <h3 className="text-lg font-bold mb-2">Machine Status</h3>
             {machineId === undefined ? (
-                <p className="mb-2">No machine parts loaded</p>
+                <p className="mb-2">No machine selected</p>
             ) : isRunning !== null ? (
                 <p className={`mb-2 ${isRunning ? 'text-green-500' : 'text-red-500'}`}>
                     Status: {isRunning ? "Running" : "Not Running"}
@@ -80,12 +80,14 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
             ) : (
                 <p className="mb-2">No machine selected</p>
             )}
-            {machineId === (undefined || -1) ? (
-                <p >No machine parts loaded.</p>
-            ) : sufficientParts ? (
-                <p className="text-green-500">All parts are sufficient.</p>
+            {machineId !== undefined && machineId !== -1 ? (
+                sufficientParts ? (
+                    <p className="text-green-500">All parts are sufficient.</p>
+                ) : (
+                    <p className="text-yellow-500">Insufficient parts to meet requirements.</p>
+                )
             ) : (
-                <p className="text-yellow-500">Insufficient parts to meet requirements.</p>
+                <p>No machine parts loaded.</p>
             )}
         </div>
     );
