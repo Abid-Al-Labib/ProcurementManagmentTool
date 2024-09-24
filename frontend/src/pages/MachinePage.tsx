@@ -44,25 +44,20 @@ const MachinePartsPage = () => {
 
     try {
       setLoading(true);
-      const fetchedParts = await fetchMachineParts(selectedMachineId, filters.partIdQuery, filters.partNameQuery);
-      const processedParts = fetchedParts.map((record: any) => ({
-        id: record.id,
-        machine_id: record.machine_id,
-        machine_name: record.machines.name ?? "Unknown", // Correctly mapped machine_name
-        part_id: record.parts.id,                       // Ensure part_id is included
-        part_name: record.parts.name,                   // Correctly mapped part_name
-        qty: record.qty,                                // Current quantity
-        req_qty: record.req_qty ?? -1,                   // Required quantity, defaulting to 0 if missing
-      }));
 
-      setMachineParts(processedParts); // Correctly set state with processed data
+      // Reset the machine parts, running orders, and selected machine to blank or initial states
+      setMachineParts([]); // Clear machine parts
+      setRunningOrders([]); // Clear running orders
+      setSelectedMachine(undefined); // Reset the selected machine
 
+      // Fetch only the required data: running orders and machine details
       const orders = await fetchRunningOrdersByMachineId(selectedMachineId);
-      setRunningOrders(orders);
+      setRunningOrders(orders); // Set running orders
 
-      // Fetch the machine and handle null by converting to undefined
+      // Fetch the machine details and handle null by converting to undefined
       const machine = await fetchMachineById(selectedMachineId);
-      setSelectedMachine(machine ?? undefined); // Convert null to undefined
+      setSelectedMachine(machine ?? undefined); // Set the machine details
+
     } catch (error) {
       toast.error("Failed to refresh components");
     } finally {
@@ -106,13 +101,13 @@ const MachinePartsPage = () => {
         try {
           const fetchedMachines = await fetchMachines(selectedFactorySectionId);
           setMachines(fetchedMachines);
-          setSelectedMachineId(-1);
+          setSelectedMachineId(undefined);
         } catch (error) {
           toast.error("Failed to load machines");
         }
       } else {
         setMachines([]);
-        setSelectedMachineId(-1);
+        setSelectedMachineId(undefined);
       }
     };
     loadMachines();
@@ -120,7 +115,7 @@ const MachinePartsPage = () => {
 
   useEffect(() => {
     const loadParts = async () => {
-      if (selectedMachineId === undefined) {
+      if (selectedMachineId == undefined) {
         setMachineParts([]);
         setLoading(false);
         return;
@@ -156,22 +151,27 @@ const MachinePartsPage = () => {
 
   // New function to handle machine selection
   const handleSelectMachine = async (value: string) => {
-    const machineId = value === "" ? undefined : Number(value);
+    const machineId = value == "" ? undefined : Number(value);
+
+    
     setSelectedMachineId(machineId);
     setMachineParts([]);
     setRunningOrders([]); // Reset running orders when selecting a new machine
 
     console.log("inHandleMachine");
+    console.log(machineId);
 
     if (machineId) {
       refreshComponents(); // Call refreshComponents after setting the machine ID
       try {
         const runningOrdersData = await fetchRunningOrdersByMachineId(machineId);
+        console.log("runningorder on");
+        console.log(machineId);
         setRunningOrders(runningOrdersData); // Set running orders
 
 
         if (runningOrdersData.length === 0) {
-          console.log("in running orders check");
+          // console.log("in running orders check");
           await setMachineIsRunningById(machineId, true);
         }
 
@@ -209,11 +209,14 @@ const MachinePartsPage = () => {
                 <Label className="mb-2">Select Factory</Label>
                 <Select
                   value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
-                  onValueChange={(value) => {
+                  onValueChange={async (value) => {
                     setSelectedFactoryId(value === "" ? undefined : Number(value));
                     setSelectedFactorySectionId(undefined);
                     setSelectedMachineId(undefined);
                     setMachineParts([]);
+                    setRunningOrders([]);
+                    setSelectedMachine(undefined);
+                    
                   }}
                 >
                   <SelectTrigger className="w-[220px] mt-2">
@@ -243,6 +246,8 @@ const MachinePartsPage = () => {
                       setSelectedFactorySectionId(value === "" ? undefined : Number(value));
                       setSelectedMachineId(undefined);
                       setMachineParts([]);
+                      setRunningOrders([]);
+                      setSelectedMachine(undefined);
                     }}
                   >
                     <SelectTrigger className="w-[220px] mt-2">

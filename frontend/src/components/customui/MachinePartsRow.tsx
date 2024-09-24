@@ -50,7 +50,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
                     className="border p-1 rounded w-20"
                 />
             ) : (
-                <span className={MachinePart.qty < MachinePart.req_qty ? 'text-red-500' : ''}>
+                <span className={MachinePart.qty < MachinePart.req_qty ? 'text-orange-500' : ''}>
                     {MachinePart.qty}
                 </span>
             )}</TableCell>
@@ -64,7 +64,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
                     />
                 ) : (
                     MachinePart.req_qty === -1 ? (
-                        <span className="text-red-500">Never Set</span>
+                        <span className="text-red-500">--</span>
                     ) : (
                         MachinePart.req_qty
                     )

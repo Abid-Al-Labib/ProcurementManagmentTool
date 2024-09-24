@@ -23,7 +23,7 @@ interface MachinePartsTableProps {
 }
 
 const MachinePartsTable: React.FC<MachinePartsTableProps> = ({ MachineParts, onApplyFilters, onResetFilters, onRefresh}) => {
-    console.log(MachineParts);
+    console.log("Machine Parts of", MachineParts);
 
     return (
         <Card className="mt-5">
