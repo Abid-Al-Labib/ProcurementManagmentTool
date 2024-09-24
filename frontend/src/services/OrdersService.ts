@@ -259,6 +259,6 @@ export const fetchRunningOrdersByMachineId = async (machine_id: number) => {
     if (error) {
         toast.error(error.message)
     }
-    console.log(data)
+    console.log("Returned Current Orders of",machine_id, data)
     return data as unknown as Order[];
 }
