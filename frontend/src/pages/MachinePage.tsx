@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Machine, Order } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type MachinePart = {
   id: number;
@@ -49,10 +50,6 @@ const MachinePartsPage = () => {
       setMachineParts([]); // Clear machine parts
       setRunningOrders([]); // Clear running orders
       setSelectedMachine(undefined); // Reset the selected machine
-
-      // Fetch only the required data: running orders and machine details
-      const orders = await fetchRunningOrdersByMachineId(selectedMachineId);
-      setRunningOrders(orders); // Set running orders
 
       // Fetch the machine details and handle null by converting to undefined
       const machine = await fetchMachineById(selectedMachineId);
@@ -202,8 +199,11 @@ const MachinePartsPage = () => {
       <NavigationBar />
       <div className="flex w-full flex-col bg-muted/40 mt-2">
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-1/2">
+          {/* Container for selections, running orders, and machine status */}
+          <div className="flex justify-between items-start gap-4"> {/* Add gap for spacing */}
+
+            {/* Selections Section */}
+            <div className="flex flex-col w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
               {/* Factory Selection Dropdown */}
               <div className="mb-4">
                 <Label className="mb-2">Select Factory</Label>
@@ -216,7 +216,6 @@ const MachinePartsPage = () => {
                     setMachineParts([]);
                     setRunningOrders([]);
                     setSelectedMachine(undefined);
-                    
                   }}
                 >
                   <SelectTrigger className="w-[220px] mt-2">
@@ -274,7 +273,7 @@ const MachinePartsPage = () => {
                   <Label className="mb-2">Select Machine</Label>
                   <Select
                     value={selectedMachineId === undefined ? "" : selectedMachineId.toString()}
-                    onValueChange={handleSelectMachine} // Use the new function
+                    onValueChange={handleSelectMachine}
                   >
                     <SelectTrigger className="w-[220px] mt-2">
                       <SelectValue>
@@ -295,56 +294,44 @@ const MachinePartsPage = () => {
               )}
             </div>
 
-            {/* Display Running Orders Table */}
-            <div className="w-1/2 ml-4">
+            {/* Running Orders Section */}
+            <div className="w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
               {runningOrders.length > 0 && (
                 <div className="bg-white p-4 rounded shadow">
                   <h3 className="font-bold text-lg mb-2">Running Orders</h3>
-                  {/* Scrollable container with a max-height and overflow properties */}
-                  <div className="max-h-64 overflow-y-auto"> {/* Set max-height and make it scrollable */}
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr>
-                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Order ID
-                          </th>
-                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Created At
-                          </th>
-                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Order Note
-                          </th>
-                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                  <div className="max-h-64 overflow-y-auto">
+                    <Table>
+                      <TableCaption>A list of current running orders.</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Order ID</TableHead>
+                          <TableHead>Created At</TableHead>
+                          <TableHead>Order Note</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {runningOrders.map((order) => (
-                          <tr key={order.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline">
-                              <Link to={`/vieworder/${order.id}`}>{order.id}</Link> {/* Link to view order page */}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {order.order_note}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {order.statuses.name}
-                            </td>
-                          </tr>
+                          <TableRow key={order.id}>
+                            <TableCell className="text-blue-600 hover:underline font-medium">
+                              <Link to={`/vieworder/${order.id}`}>{order.id}</Link>
+                            </TableCell>
+                            <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell>{order.order_note}</TableCell>
+                            <TableCell>{order.statuses.name}</TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Machine Status Display */}
-            <MachineStatus machineId={selectedMachineId} />
+            {/* Machine Status Section */}
+            <div className="w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
+              <MachineStatus machineId={selectedMachineId} />
+            </div>
           </div>
 
           {MachineParts.length === 0 ? (
@@ -354,14 +341,10 @@ const MachinePartsPage = () => {
               MachineParts={MachineParts}
               onApplyFilters={setFilters}
               onResetFilters={() => setFilters({})}
-              onRefresh={refreshComponents} // Pass refresh function to the table
-
+              onRefresh={refreshComponents}
             />
           )}
         </main>
-        <div className="flex justify-end">
-          <div className="my-3 mx-3"></div>
-        </div>
       </div>
     </>
   );
