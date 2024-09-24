@@ -15,6 +15,8 @@ import { Machine, Order } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type MachinePart = {
   id: number;
@@ -200,105 +202,114 @@ const MachinePartsPage = () => {
       <div className="flex w-full flex-col bg-muted/40 mt-2">
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0">
           {/* Container for selections, running orders, and machine status */}
-          <div className="flex justify-between items-start gap-4"> {/* Add gap for spacing */}
+          <div className="flex justify-between items-start gap-4">
 
             {/* Selections Section */}
-            <div className="flex flex-col w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
-              {/* Factory Selection Dropdown */}
-              <div className="mb-4">
-                <Label className="mb-2">Select Factory</Label>
-                <Select
-                  value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
-                  onValueChange={async (value) => {
-                    setSelectedFactoryId(value === "" ? undefined : Number(value));
-                    setSelectedFactorySectionId(undefined);
-                    setSelectedMachineId(undefined);
-                    setMachineParts([]);
-                    setRunningOrders([]);
-                    setSelectedMachine(undefined);
-                  }}
-                >
-                  <SelectTrigger className="w-[220px] mt-2">
-                    <SelectValue>
-                      {selectedFactoryId === undefined
-                        ? "Select a Factory"
-                        : factories.find((f) => f.id === selectedFactoryId)?.name}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {factories.map((factory) => (
-                      <SelectItem key={factory.id} value={factory.id.toString()}>
-                        {factory.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex-none min-w-72 max-w-96 w-1/6"> {/* Roughly 1/6th of the width */}
 
-              {/* Factory Section Selection Dropdown */}
-              {selectedFactoryId !== undefined && (
-                <div className="mb-4">
-                  <Label className="mb-2">Select Factory Section</Label>
-                  <Select
-                    value={selectedFactorySectionId === undefined ? "" : selectedFactorySectionId.toString()}
-                    onValueChange={(value) => {
-                      setSelectedFactorySectionId(value === "" ? undefined : Number(value));
-                      setSelectedMachineId(undefined);
-                      setMachineParts([]);
-                      setRunningOrders([]);
-                      setSelectedMachine(undefined);
-                    }}
-                  >
-                    <SelectTrigger className="w-[220px] mt-2">
-                      <SelectValue>
-                        {selectedFactorySectionId === undefined
-                          ? "Select a Section"
-                          : factorySections.find((s) => s.id === selectedFactorySectionId)?.name}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {factorySections.map((section) => (
-                        <SelectItem key={section.id} value={section.id.toString()}>
-                          {section.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle>Machine Details</CardTitle>
+                </CardHeader>
 
-              {/* Machine Selection Dropdown */}
-              {selectedFactorySectionId !== undefined && (
-                <div className="mb-4">
-                  <Label className="mb-2">Select Machine</Label>
-                  <Select
-                    value={selectedMachineId === undefined ? "" : selectedMachineId.toString()}
-                    onValueChange={handleSelectMachine}
-                  >
-                    <SelectTrigger className="w-[220px] mt-2">
-                      <SelectValue>
-                        {selectedMachineId === undefined
-                          ? "Select a Machine"
-                          : machines.find((m) => m.id === selectedMachineId)?.name}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {machines.map((machine) => (
-                        <SelectItem key={machine.id} value={machine.id.toString()}>
-                          {machine.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                <CardContent>
+                  {/* Factory Selection Dropdown */}
+                  <div className="mb-4">
+                    <Label className="mb-2">Select Factory</Label>
+                    <Select
+                      value={selectedFactoryId === undefined ? "" : selectedFactoryId.toString()}
+                      onValueChange={async (value) => {
+                        setSelectedFactoryId(value === "" ? undefined : Number(value));
+                        setSelectedFactorySectionId(undefined);
+                        setSelectedMachineId(undefined);
+                        setMachineParts([]);
+                        setRunningOrders([]);
+                        setSelectedMachine(undefined);
+                      }}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue>
+                          {selectedFactoryId === undefined
+                            ? "Select a Factory"
+                            : factories.find((f) => f.id === selectedFactoryId)?.name}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {factories.map((factory) => (
+                          <SelectItem key={factory.id} value={factory.id.toString()}>
+                            {factory.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Factory Section Selection Dropdown */}
+                  {selectedFactoryId !== undefined && (
+                    <div className="mb-4">
+                      <Label className="mb-2">Select Factory Section</Label>
+                      <Select
+                        value={selectedFactorySectionId === undefined ? "" : selectedFactorySectionId.toString()}
+                        onValueChange={(value) => {
+                          setSelectedFactorySectionId(value === "" ? undefined : Number(value));
+                          setSelectedMachineId(undefined);
+                          setMachineParts([]);
+                          setRunningOrders([]);
+                          setSelectedMachine(undefined);
+                        }}
+                      >
+                        <SelectTrigger className="mt-2">
+                          <SelectValue>
+                            {selectedFactorySectionId === undefined
+                              ? "Select a Section"
+                              : factorySections.find((s) => s.id === selectedFactorySectionId)?.name}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {factorySections.map((section) => (
+                            <SelectItem key={section.id} value={section.id.toString()}>
+                              {section.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Machine Selection Dropdown */}
+                  {selectedFactorySectionId !== undefined && (
+                    <div className="mb-4">
+                      <Label className="mb-2">Select Machine</Label>
+                      <Select
+                        value={selectedMachineId === undefined ? "" : selectedMachineId.toString()}
+                        onValueChange={handleSelectMachine}
+                      >
+                        <SelectTrigger className="mt-2">
+                          <SelectValue>
+                            {selectedMachineId === undefined
+                              ? "Select a Machine"
+                              : machines.find((m) => m.id === selectedMachineId)?.name}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {machines.map((machine) => (
+                            <SelectItem key={machine.id} value={machine.id.toString()}>
+                              {machine.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-
+            
             {/* Running Orders Section */}
-            <div className="w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
+            <div className="flex-1 w-4/6 ml-4"> {/* Roughly 4/6th of the width */}
               {runningOrders.length > 0 && (
                 <div className="bg-white p-4 rounded shadow">
-                  <h3 className="font-bold text-lg mb-2">Running Orders</h3>
+                  <h3 className="font-semibold text-2xl mb-2">Running Orders</h3>
                   <div className="max-h-64 overflow-y-auto">
                     <Table>
                       <TableCaption>A list of current running orders.</TableCaption>
@@ -313,8 +324,10 @@ const MachinePartsPage = () => {
                       <TableBody>
                         {runningOrders.map((order) => (
                           <TableRow key={order.id}>
-                            <TableCell className="text-blue-600 hover:underline font-medium">
-                              <Link to={`/vieworder/${order.id}`}>{order.id}</Link>
+                            <TableCell>
+                              <Badge variant="secondary" className="bg-blue-100">
+                                <Link to={`/vieworder/${order.id}`}>{order.id}</Link>
+                              </Badge>
                             </TableCell>
                             <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                             <TableCell>{order.order_note}</TableCell>
@@ -329,7 +342,7 @@ const MachinePartsPage = () => {
             </div>
 
             {/* Machine Status Section */}
-            <div className="w-1/3"> {/* Adjust width to 1/3 for balanced layout */}
+            <div className="flex min-w-44 max-w-lg"> {/* Roughly 1/6th of the width */}
               <MachineStatus machineId={selectedMachineId} />
             </div>
           </div>

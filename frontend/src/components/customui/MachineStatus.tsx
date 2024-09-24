@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { fetchMachineById } from "@/services/MachineServices";
 import { fetchMachineParts } from "@/services/MachinePartsService";
 import { Loader2 } from "lucide-react";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Badge } from "../ui/badge";
 
 interface MachineStatusProps {
     machineId?: number;
@@ -69,27 +72,48 @@ const MachineStatus: React.FC<MachineStatusProps> = ({ machineId }) => {
     }
 
     return (
-        <div className="p-6 border rounded-lg bg-gray-100 shadow-md w-1/2">
-            <h3 className="text-lg font-bold mb-2">Machine Status</h3>
-            {machineId === undefined ? (
-                <p className="mb-2">No machine selected</p>
-            ) : isRunning !== null ? (
-                <p className={`mb-2 ${isRunning ? 'text-green-500' : 'text-red-500'}`}>
-                    Status: {isRunning ? "Running" : "Not Running"}
-                </p>
-            ) : (
-                <p className="mb-2">No machine selected</p>
-            )}
-            {machineId !== undefined && machineId !== -1 ? (
-                sufficientParts ? (
-                    <p className="text-green-500">All parts are sufficient.</p>
-                ) : (
-                    <p className="text-yellow-500">Insufficient parts to meet requirements.</p>
-                )
-            ) : (
-                <p>No machine parts loaded.</p>
-            )}
-        </div>
+        <Card className="mb-4">
+            <CardHeader>
+                <CardTitle>Machine Status</CardTitle>
+            </CardHeader>
+
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Part Sufficiency</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell>
+                                {machineId === undefined ? (
+                                    "No machine selected"
+                                ) : isRunning !== null ? (
+                                        <Badge variant="secondary" className={isRunning ? 'bg-green-100' : 'bg-red-100'}>
+                                            {isRunning ? "Running" : "Not Running"}
+                                        </Badge>
+                                ) : (
+                                    "No machine selected"
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                {machineId !== undefined && machineId !== -1 ? (
+                                    sufficientParts ? (
+                                        <Badge variant="secondary" className="bg-green-100">All parts are sufficient.</Badge>
+                                    ) : (
+                                        <Badge variant="secondary" className="bg-orange-100">Insufficient parts to meet requirements.</Badge>
+                                    )
+                                ) : (
+                                    "No machine parts loaded."
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     );
 };
 
