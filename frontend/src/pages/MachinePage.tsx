@@ -1,5 +1,5 @@
-// MachinePartsPage.tsx
-import { useEffect, useState } from "react";
+// MachinePage.tsx
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
@@ -11,14 +11,14 @@ import MachinePartsTable from "@/components/customui/MachinePartsTable";
 import NavigationBar from "@/components/customui/NavigationBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Machine } from "@/types";
+import { Machine, Order } from "@/types";
 import MachineStatus from "@/components/customui/MachineStatus";
 import { fetchRunningOrdersByMachineId } from "@/services/OrdersService";
 
 type MachinePart = {
   id: number;
   machine_id: number;
-  machine_number: number;
+  machine_name: string;
   part_id: number;
   part_name: string;
   qty: number;
@@ -36,6 +36,39 @@ const MachinePartsPage = () => {
   const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number | undefined>(undefined);
   const [selectedMachineId, setSelectedMachineId] = useState<number | undefined>(undefined);
   const [selectedMachine, setSelectedMachine] = useState<Machine>();
+  const [runningOrders, setRunningOrders] = useState<Order[]>([]); // State for running orders
+
+  
+  const refreshComponents = useCallback(async () => {
+    if (!selectedMachineId) return;
+
+    try {
+      setLoading(true);
+      const fetchedParts = await fetchMachineParts(selectedMachineId, filters.partIdQuery, filters.partNameQuery);
+      const processedParts = fetchedParts.map((record: any) => ({
+        id: record.id,
+        machine_id: record.machine_id,
+        machine_name: record.machines.name ?? "Unknown", // Correctly mapped machine_name
+        part_id: record.parts.id,                       // Ensure part_id is included
+        part_name: record.parts.name,                   // Correctly mapped part_name
+        qty: record.qty,                                // Current quantity
+        req_qty: record.req_qty ?? -1,                   // Required quantity, defaulting to 0 if missing
+      }));
+
+      setMachineParts(processedParts); // Correctly set state with processed data
+
+      const orders = await fetchRunningOrdersByMachineId(selectedMachineId);
+      setRunningOrders(orders);
+
+      // Fetch the machine and handle null by converting to undefined
+      const machine = await fetchMachineById(selectedMachineId);
+      setSelectedMachine(machine ?? undefined); // Convert null to undefined
+    } catch (error) {
+      toast.error("Failed to refresh components");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMachineId, filters]);
 
   useEffect(() => {
     // Fetch factories when the component mounts
@@ -104,11 +137,11 @@ const MachinePartsPage = () => {
         const processedParts = fetchedParts.map((record: any) => ({
           id: record.id,
           machine_id: record.machine_id,
-          machine_number: record.machines.number ?? -1,
+          machine_name: record.machines.name ?? "Unknown",
           part_id: record.parts.id,
           part_name: record.parts.name,
           qty: record.qty,
-          req_qty: record.req_qty ?? 0,
+          req_qty: record.req_qty ?? -1,
         }));
 
         setMachineParts(processedParts);
@@ -126,14 +159,18 @@ const MachinePartsPage = () => {
     const machineId = value === "" ? undefined : Number(value);
     setSelectedMachineId(machineId);
     setMachineParts([]);
+    setRunningOrders([]); // Reset running orders when selecting a new machine
 
     console.log("inHandleMachine");
 
     if (machineId) {
+      refreshComponents(); // Call refreshComponents after setting the machine ID
       try {
-        const runningOrders = await fetchRunningOrdersByMachineId(machineId);
+        const runningOrdersData = await fetchRunningOrdersByMachineId(machineId);
+        setRunningOrders(runningOrdersData); // Set running orders
 
-        if (runningOrders.length === 0) {
+
+        if (runningOrdersData.length === 0) {
           console.log("in running orders check");
           await setMachineIsRunningById(machineId, true);
         }
@@ -253,6 +290,54 @@ const MachinePartsPage = () => {
               )}
             </div>
 
+            {/* Display Running Orders Table */}
+            <div className="w-1/2 ml-4">
+              {runningOrders.length > 0 && (
+                <div className="bg-white p-4 rounded shadow">
+                  <h3 className="font-bold text-lg mb-2">Running Orders</h3>
+                  {/* Scrollable container with a max-height and overflow properties */}
+                  <div className="max-h-64 overflow-y-auto"> {/* Set max-height and make it scrollable */}
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr>
+                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Order ID
+                          </th>
+                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created At
+                          </th>
+                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Order Note
+                          </th>
+                          <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {runningOrders.map((order) => (
+                          <tr key={order.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline">
+                              <Link to={`/vieworder/${order.id}`}>{order.id}</Link> {/* Link to view order page */}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {order.order_note}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {order.statuses.name}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Machine Status Display */}
             <MachineStatus machineId={selectedMachineId} />
           </div>
@@ -264,6 +349,8 @@ const MachinePartsPage = () => {
               MachineParts={MachineParts}
               onApplyFilters={setFilters}
               onResetFilters={() => setFilters({})}
+              onRefresh={refreshComponents} // Pass refresh function to the table
+
             />
           )}
         </main>

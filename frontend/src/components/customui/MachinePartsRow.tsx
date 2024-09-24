@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'; // Optional: For showing success/error mess
 type MachinePart = {
     id: number;
     machine_id: number;
-    machine_number: number;
+    machine_name: string;
     part_id: number;
     part_name: string;
     qty: number;
@@ -17,9 +17,10 @@ type MachinePart = {
 
 interface MachinePartsRowProps {
     MachinePart: MachinePart;
+    onRefresh: () => Promise<void>; // Add onRefresh prop to the row interface
 }
 
-const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
+const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefresh }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [newCurQty, setNewCurQty] = useState<number>(MachinePart.qty);
     const [newReqQty, setNewReqQty] = useState<number>(MachinePart.req_qty);
@@ -29,6 +30,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
             await updateRequiredQuantity(MachinePart.id, newCurQty, newReqQty);
             setIsEditing(false); 
             MachinePart.req_qty = newReqQty; // Directly update the MachinePart object with the new quantity
+            await onRefresh(); // Trigger a refresh after successful update
         } catch (error) {
             // console.error('Failed to update required quantity:', error);
             toast.error('Failed to update required quantity.'); // Optional: Show error message
@@ -48,7 +50,9 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
                     className="border p-1 rounded w-20"
                 />
             ) : (
-                MachinePart.qty
+                <span className={MachinePart.qty < MachinePart.req_qty ? 'text-red-500' : ''}>
+                    {MachinePart.qty}
+                </span>
             )}</TableCell>
             <TableCell>
                 {isEditing ? (
@@ -59,14 +63,23 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart }) => {
                         className="border p-1 rounded w-20"
                     />
                 ) : (
-                    MachinePart.req_qty
+                    MachinePart.req_qty === -1 ? (
+                        <span className="text-red-500">Never Set</span>
+                    ) : (
+                        MachinePart.req_qty
+                    )
                 )}
             </TableCell>
             <TableCell>
                 {isEditing ? (
-                    <Button onClick={handleUpdate} className="ml-2">
-                        Save
-                    </Button>
+                    <>
+                        <Button onClick={handleUpdate} className="ml-2">
+                            Save
+                        </Button>
+                        <Button onClick={() => setIsEditing(false)} className="ml-2">
+                            Cancel
+                        </Button>
+                    </>
                 ) : (
                     <Button onClick={() => setIsEditing(true)} className="ml-2">
                         Set Quantity
