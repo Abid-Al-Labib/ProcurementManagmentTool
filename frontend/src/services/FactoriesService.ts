@@ -27,6 +27,18 @@ export const fetchFactorySections = async (factoryId: number) => {
     return data;
 };
 
+export const fetchAllFactorySections = async () => {
+    const { data, error } = await supabase_client
+        .from('factory_sections')
+        .select('id, name, factory_id');
+
+    if (error) {
+        console.error('Error fetching all factory sections:', error.message);
+        return [];
+    }
+    return data;
+};
+
 export const fetchDepartments = async () => {
     const { data, error } = await supabase_client
         .from('departments')

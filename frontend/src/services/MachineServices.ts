@@ -2,18 +2,38 @@ import { Machine } from "@/types";
 import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
-export const fetchMachines = async (factorySectionId: number) => {
-    const { data, error } = await supabase_client
+export const fetchMachines = async (
+    factorySectionId: number | undefined,
+    page: number = 1,
+    limit: number = 10,
+    sortOrder: 'asc' | 'desc' | null = null
+) => {
+    let queryBuilder = supabase_client
         .from('machines')
-        .select('id, type, name, is_running')
-        .eq('factory_section_id', factorySectionId);
+        .select('id, type, name, is_running, factory_section_id', { count: 'exact' }); // Request total count
+
+    // Apply filter if factorySectionId is provided
+    if (factorySectionId !== undefined && factorySectionId !== -1) {
+        queryBuilder = queryBuilder.eq('factory_section_id', factorySectionId);
+    }
+
+    // Apply pagination
+    queryBuilder = queryBuilder.range((page - 1) * limit, page * limit - 1);
+
+    // Apply sorting by status if provided
+    if (sortOrder) {
+        queryBuilder = queryBuilder.order('is_running', { ascending: sortOrder === 'asc' });
+    }
+
+    const { data, error, count } = await queryBuilder;
 
     if (error) {
         console.error('Error fetching machines:', error.message);
-        return [];
+        return { data: [], count: 0 };
     }
-    return data;
+    return { data, count };
 };
+
 
 export const fetchMachineById = async (machineId: number) => {
     const { data, error } = await supabase_client
