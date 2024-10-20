@@ -1,7 +1,7 @@
 // AllMachinesStatus.tsx
 import { useEffect, useState } from "react";
 import { fetchFactories, fetchAllFactorySections } from "@/services/FactoriesService";
-import { fetchMachines } from "@/services/MachineServices";
+import { fetchEnrichedMachines, fetchMachines } from "@/services/MachineServices";
 import { Loader2 } from "lucide-react";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +46,7 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
     const [totalCount, setTotalCount] = useState(0);
 
     useEffect(() => {
+        setCurrentPage(1); // Reset to the first page whenever factory or factory section changes
         const fetchAllData = async () => {
             setLoading(true);
             try {
@@ -71,37 +72,12 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
         try {
             setLoading(true);
 
-            let fetchedFactories = factories;
-            if (factories.length === 0) {
-                fetchedFactories = await fetchFactories();
-                setFactories(fetchedFactories);
-            }
-
-            // Fetch factory sections if not already loaded
-            let allSections = factorySections;
-            if (factorySections.length === 0) {
-                allSections = await fetchAllFactorySections();
-                setFactorySections(allSections);
-            }
-
-            const { data, count } = await fetchMachines(factorySectionId ?? -1, page, machinesPerPage, sortOrder);
-            console.log("Fetched Machines:", data);
-            const enrichedMachines: Machine[] = data.map(machine => {
-                const section = factorySections.find(s => s.id === machine.factory_section_id);
-                console.log("Section:", section);
-                const factoryName = section ? factories.find(f => f.id === section.factory_id)?.name || "Unknown Factory" : "Unknown Factory";
-                return {
-                    ...machine,
-                    factory_section_id: machine.factory_section_id,
-                    factory: factoryName,
-                    factory_section_name: section?.name || "Unknown Section",
-                };
-            });
+            const { data: enrichedMachines, count } = await fetchEnrichedMachines(factoryId ?? -1, factorySectionId ?? -1, page, machinesPerPage, sortOrder);
 
             // Set the state with the enriched machine data
             setMachines(enrichedMachines);
             setTotalCount(count ?? 0);
-            setTotalPages(Math.max(1, Math.ceil((count ?? 0) / machinesPerPage)));
+            setTotalPages(Math.ceil((count ?? 0) / machinesPerPage));
         } catch (error) {
             console.error("Error fetching machines:", error);
         } finally {
@@ -109,8 +85,9 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
         }
     };
 
+
     const handleSortByStatus = () => {
-        const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        const newSortOrder = sortOrder === 'asc' ? 'desc' : sortOrder === 'desc' ? null : 'asc';
         setSortOrder(newSortOrder);
         setCurrentPage(1); // Reset to the first page whenever sorting changes
         fetchMachinesForPage(1, newSortOrder);
