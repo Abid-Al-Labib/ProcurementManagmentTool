@@ -9,7 +9,7 @@ export const showPendingOrderApproveButton = (status:string , isapproved:boolean
 }
 
 export const showOfficeOrderApproveButton = (status:string, isapproved:boolean): boolean =>{
-    if (status === "Order Sent To Head O`f`fice" && !isapproved) {
+    if (status === "Order Sent To Head Office" && !isapproved) {
         return true;
     }
     return false;
