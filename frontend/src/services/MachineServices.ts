@@ -117,12 +117,10 @@ export const setMachineIsRunningById = async (machineId: number, isRunning: bool
         .maybeSingle(); // .maybeSingle() is used to ensure only one record is returned.
 
     if (error) {
-        console.error('Error updating machine status:', error.message);
         toast.error('Failed to update machine status.'); // Optional: Show error message
         return null;
     }
-
-    toast.success('Machine status updated successfully!'); // Optional: Show success message
+    // toast.success('Machine status updated successfully!'); // Optional: Show success message
     return data;
 };
 

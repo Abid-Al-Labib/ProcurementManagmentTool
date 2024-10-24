@@ -78,27 +78,6 @@ export const fetchOrders = async ({
         queryBuilder = queryBuilder.eq('id', query);
     }
 
-    // if (searchDate) {
-    //     const formattedDate = searchDate.toISOString().split('T')[0];
-    //     queryBuilder = queryBuilder.gte('created_at', `${formattedDate}T00:00:00.000Z`)
-    //         .lte('created_at', `${formattedDate}T23:59:59.999Z`);
-    // }
-
-    // if (searchDate) {
-    //     const searchDateStr = searchDate.toISOString().split('T')[0];
-
-    //     // Convert the start of the day in BD time to UTC
-    //     const startOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T00:00:00`);
-
-    //     // Convert the end of the day in BD time to UTC
-    //     const endOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T23:59:59`);
-
-    //     queryBuilder = queryBuilder.gte('created_at', startOfDayUTC)
-    //         .lte('created_at', endOfDayUTC);
-
-    //     console.log('Fetching orders with search date:', startOfDayUTC, 'to', endOfDayUTC);
-    // }
-
     if (searchDate && dateFilterType) {
         const searchDateStr = searchDate.toISOString().split('T')[0];
 
@@ -315,6 +294,7 @@ export const fetchMetricActiveOrders = async () => {
     }
     return count
 }
+
 
 export const fetchManagableOrders = async (role:string) => {
     const { data, error } = await supabase_client.from('orders').

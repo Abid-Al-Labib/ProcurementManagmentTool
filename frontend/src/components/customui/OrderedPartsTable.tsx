@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { isChangeStatusAllowed } from "@/services/helper";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { deleteOrderByID, UpdateStatusByID } from "@/services/OrdersService";
+import { deleteOrderByID, fetchRunningOrdersByMachineId, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
 import { showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
@@ -17,6 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
 import { updateMachinePartQty } from "@/services/MachinePartsService";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
+import { setMachineIsRunningById } from "@/services/MachineServices";
 
 interface OrderedPartsTableProp {
   mode:  "view" | "manage" | "invoice"
@@ -164,6 +165,12 @@ const manageOrderStatus = async () => {
         console.log("updating status and inserting to status tracker")
         await UpdateStatusByID(order.id,next_status_id)
         await InsertStatusTracker((new Date()), order.id, profile.id, next_status_id)
+        if(next_status_id == 8){
+          if((await (fetchRunningOrdersByMachineId(order.machine_id))).length==0){
+            setMachineIsRunningById(order.machine_id,true)
+            toast.success("Machine is now running")
+          }
+        }
       } catch (error) {
         toast.error("Error updating status")
       }

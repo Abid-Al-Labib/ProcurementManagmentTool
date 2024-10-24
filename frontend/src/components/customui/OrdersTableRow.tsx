@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { TableCell, TableRow } from "../ui/table";
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/badge';
-import { deleteOrderByID } from '@/services/OrdersService';
+import { deleteOrderByID, fetchRunningOrdersByMachineId } from '@/services/OrdersService';
 import toast from 'react-hot-toast';
 import { Order } from '@/types';
 import { convertUtcToBDTime, managePermission } from '@/services/helper';
@@ -13,6 +13,7 @@ import { Dialog, DialogTitle, DialogContent, DialogHeader, DialogDescription, Di
 import { profile } from 'console';
 import { useAuth } from '@/context/AuthContext';
 import { OctagonAlert } from 'lucide-react';
+import { setMachineIsRunningById } from '@/services/MachineServices';
 
 
 
@@ -26,6 +27,12 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({ order, onDeleteRefresh 
   const profile = useAuth().profile
   const handleDeleteOrder = async () => {
     try {
+        if(order.current_status_id === 1) {
+          if ((await (fetchRunningOrdersByMachineId(order.machine_id))).length == 1) {
+            setMachineIsRunningById(order.machine_id, true)
+            toast.success("Machine is now running")
+          }
+        }
         await deleteOrderByID(order.id)
         onDeleteRefresh()
         toast.success("Order successfully deleted")

@@ -394,6 +394,9 @@ export const OrderedPartRow:React.FC<OrderedPartRowProp> = ({mode, orderedPartIn
             if (order_type == "Machine") {
               updateMachinePartQty(machine_id, orderedPartInfo.part_id, orderedPartInfo.qty,'add');
             }
+
+            
+
           } catch (error) {
             toast.error("Error occured could not complete action");
           } 
