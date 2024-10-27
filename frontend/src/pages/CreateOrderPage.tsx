@@ -12,7 +12,7 @@ import { insertOrder, insertOrderStorage } from "@/services/OrdersService";
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
-import { fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
+import { fetchAllMachines, fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts } from "@/services/PartsService"
 import { Part } from "@/types"
@@ -401,7 +401,7 @@ const CreateOrderPage = () => {
     useEffect(() => {
         const loadMachines = async () => {
             if (selectedFactorySectionId !== -1) {
-                const fetchedMachines = await fetchMachines(selectedFactorySectionId);
+                const fetchedMachines = await fetchAllMachines(selectedFactorySectionId);
                 setMachines(fetchedMachines.data);
                 setSelectedMachineId(-1); // Reset machine ID when the section changes
                 setTimeout(() => setSelectedMachineId(-1), 0); // Clear and reset
@@ -555,7 +555,8 @@ const CreateOrderPage = () => {
                                         disabled={isOrderStarted || selectedFactorySectionId === -1} // Disabled if no factory section is selected
                                     >
                                         <Label htmlFor="machine">Machine</Label>
-                                        <SelectTrigger className="w-[220px]">
+                                        <SelectTrigger className="w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">
+
                                             <SelectValue>
                                                 {selectedMachineId !== -1
                                                     ? machines.find(m => m.id === selectedMachineId)?.name
@@ -563,11 +564,13 @@ const CreateOrderPage = () => {
                                             </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {machines.map((machine) => (
-                                                <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                    {machine.name}
-                                                </SelectItem>
-                                            ))}
+                                            {machines
+                                                .sort((a, b) => a.id - b.id) // Sorting machines by ID in ascending order
+                                                .map((machine) => (
+                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                        {machine.name}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                 </>

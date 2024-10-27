@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
-import { fetchMachines } from '@/services/MachineServices';
+import { fetchAllMachines, fetchMachines } from '@/services/MachineServices';
 import { fetchStatuses } from '@/services/StatusesService';
 
 interface Department {
@@ -114,7 +114,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
         if (selectedFactorySectionId !== -1) {
             // Fetch machines when a factory section is selected
             const fetchMachinesData = async () => {
-                const fetchedMachines = await fetchMachines(selectedFactorySectionId);
+                const fetchedMachines = await fetchAllMachines(selectedFactorySectionId);
                 setMachines(fetchedMachines.data);
                 setSelectedMachineId(-1); // Reset machine selection
             };
@@ -369,12 +369,13 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
                                                 </SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">All Machines</SelectItem>
-                                                {machines.map(machine => (
-                                                    <SelectItem key={machine.id} value={machine.id.toString()}>
-                                                        {machine.name}
-                                                    </SelectItem>
-                                                ))}
+                                                {machines
+                                                    .sort((a, b) => a.id - b.id) // Sorting machines by ID in ascending order
+                                                    .map((machine) => (
+                                                        <SelectItem key={machine.id} value={machine.id.toString()}>
+                                                            {machine.name}
+                                                        </SelectItem>
+                                                    ))}
                                             </SelectContent>
                                         </Select>
                                     </div>

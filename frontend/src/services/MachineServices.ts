@@ -93,6 +93,31 @@ export const fetchEnrichedMachines = async (
     return { data: enrichedMachines, count };
 };
 
+export const fetchAllMachines = async (
+    factorySectionId: number | undefined,
+) => {
+    let queryBuilder = supabase_client
+        .from('machines')
+        .select('id, type, name, is_running, factory_section_id');
+
+    // Apply filter if factorySectionId is provided
+    if (factorySectionId !== undefined && factorySectionId !== -1) {
+        queryBuilder = queryBuilder.eq('factory_section_id', factorySectionId);
+    }
+
+
+    const { data, error } = await queryBuilder;
+
+    if (error) {
+        console.error('Error fetching all machines:', error.message);
+        return { data: [] };
+    }
+
+    console.log("fetching all machines")
+    return { data };
+};
+
+
 export const fetchMachineById = async (machineId: number) => {
     const { data, error } = await supabase_client
         .from('machines')

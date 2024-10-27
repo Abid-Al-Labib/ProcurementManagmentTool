@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchFactories, fetchFactorySections } from "@/services/FactoriesService";
 import { fetchMachineParts } from "@/services/MachinePartsService";
-import { fetchMachines, fetchMachineById, setMachineIsRunningById } from "@/services/MachineServices";
+import { fetchMachines, fetchMachineById, setMachineIsRunningById, fetchAllMachines } from "@/services/MachineServices";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import MachinePartsTable from "@/components/customui/MachinePartsTable";
@@ -122,7 +122,7 @@ const MachinePartsPage = () => {
     const loadMachines = async () => {
       if (selectedFactorySectionId !== undefined && selectedFactorySectionId !== -1) {
         try {
-          const fetchedMachines = (await fetchMachines(selectedFactorySectionId)).data;
+          const fetchedMachines = (await fetchAllMachines(selectedFactorySectionId)).data;
           setMachines(fetchedMachines);
           setSelectedMachineId(undefined);
         } catch (error) {
@@ -333,11 +333,13 @@ const MachinePartsPage = () => {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {machines.map((machine) => (
-                            <SelectItem key={machine.id} value={machine.id.toString()}>
-                              {machine.name}
-                            </SelectItem>
-                          ))}
+                          {machines
+                            .sort((a, b) => a.id - b.id) // Sorting machines by ID in ascending order
+                            .map((machine) => (
+                              <SelectItem key={machine.id} value={machine.id.toString()}>
+                                {machine.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
