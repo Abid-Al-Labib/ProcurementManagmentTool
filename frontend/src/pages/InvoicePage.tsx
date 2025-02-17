@@ -126,7 +126,7 @@ const InvoicePage = () => {
               <div className="max-w-xl text-balance leading-relaxed"><span className="font-semibold text-muted-foreground">Note: </span>{order.order_note}</div>
               <Separator/>
               <div className="w-full mt-2 overflow-x-auto">
-                <OrderedPartsTable mode="invoice" order={order} current_status={order.statuses} />
+                <OrderedPartsTable mode="invoice" order={order} parts={[]} current_status={order.statuses} />
               </div>
             </div>
           </main>
