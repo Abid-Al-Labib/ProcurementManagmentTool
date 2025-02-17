@@ -1,7 +1,7 @@
-import { Order, OrderedPart, Status } from "@/types";
+import { Order, OrderedPart, Part, Status } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { useEffect, useState } from "react";
-import { fetchOrderedPartsByOrderID, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
+import { fetchOrderedPartsByOrderID, insertOrderedParts, updateApprovedBudgetByID, updateApprovedOfficeOrderByID, updateApprovedPendingOrderByID } from "@/services/OrderedPartsService";
 import toast from "react-hot-toast";
 import { Flag, FlagOff, Loader2 } from "lucide-react";
 import OrderedPartRow from "./OrderedPartRow";
@@ -12,30 +12,38 @@ import { Button } from "../ui/button";
 import { deleteOrderByID, fetchRunningOrdersByMachineId, UpdateStatusByID } from "@/services/OrdersService";
 import { InsertStatusTracker } from "@/services/StatusTrackerService";
 import { useNavigate } from 'react-router-dom';
-import { showAllBudgetApproveButton, showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
+import { showAddPartButton, showAllBudgetApproveButton, showBudgetApproveButton, showOfficeOrderApproveButton, showPendingOrderApproveButton } from "@/services/ButtonVisibilityHelper";
 import { useAuth } from "@/context/AuthContext";
 import { supabase_client } from "@/services/SupabaseClient";
 import { updateMachinePartQty } from "@/services/MachinePartsService";
 import { addDamagePartQuantity } from "@/services/DamagedGoodsService";
 import { setMachineIsRunningById } from "@/services/MachineServices";
+import { Label } from "../ui/label";
+import ReactSelect from "react-select";
+import { Checkbox } from "../ui/checkbox";
+import { Textarea } from "../ui/textarea";
+import { fetchStoragePartQuantityByFactoryID } from "@/services/StorageService";
 
 interface OrderedPartsTableProp {
   mode:  "view" | "manage" | "invoice"
   order: Order
+  parts: Part[]
   current_status: Status
 }
 
 
-const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current_status}) => {
+const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, parts, current_status}) => {
   const profile = useAuth().profile
   const [orderedParts, setOrderedParts] = useState<OrderedPart[]>([]);
   const [loadingTable, setLoadingTable] = useState(true);
   const [showActionsCompletedPopup, setShowActionsCompletedPopup] = useState(false);
   const [showEmptyOrderPopup, setShowEmptyOrderPopup] = useState(false);
-  const [loadingTableButtons, setLoadingTableButtons] =useState(false)
-  const [isApproveAllFactoryDialogOpen, setisApproveAllFactoryDialogOpen] = useState(false)
-  const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false)
-  const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false)
+  const [loadingTableButtons, setLoadingTableButtons] = useState(false);
+  const [loadingAddPart, setLoadingAddPart] = useState(false);
+  const [isApproveAllFactoryDialogOpen, setisApproveAllFactoryDialogOpen] = useState(false);
+  const [isApproveAllOfficeDialogOpen, setisApproveAllOfficeDialogOpen] = useState(false);
+  const [isApproveAllBudgetDialogOpen, setApproveAllBudgetDialogOpen] = useState(false);
+  const [isAddPartDialogOpen, setIsAddPartDialogOpen] = useState(false)
   const navigate = useNavigate()
   const [totalCost, setTotalCost] = useState<string>(" - ")
   const [costBreakdown, setCostBreakdown] = useState<string>("Total Cost Breakdown: -")
@@ -45,7 +53,12 @@ const OrderedPartsTable:React.FC<OrderedPartsTableProp> = ({mode, order, current
   const [showRevertButton, setShowRevertButton] = useState<boolean>(false)
   const [isAdvanceDialogOpen,setIsAdvanceDialogOpen] = useState<boolean>(false)
   const [isRevertDialogOpen, setIsRevertDialogOpen] = useState<boolean>(false)
-
+  
+  const [searchQueryParts,setSearchQueryParts] = useState<string>('');
+  const [selectedPartId, setSelectedPartId] = useState<number>(-1);
+  const [selectedPartQty, setSelectedPartQty] = useState<number>(-1);
+  const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>(false);
+  const [selectedPartNote, setSelectedPartNote] = useState<string>('');
   const handleApproveAllPendingOrder = async () => {
     setLoadingTableButtons(true)
     try {
@@ -222,6 +235,55 @@ const manageOrderStatus = async () => {
   }
 }
 
+const resetAddPart = () => {
+  setSelectedPartQty(-1);
+  setSelectedPartId(-1);
+  setIsSampleSentToOffice(false);
+  setSelectedPartNote('');
+}
+
+const handleAddPart = async () => {
+  setIsAddPartDialogOpen(false);
+  setLoadingAddPart(true);
+  try {
+      
+      const storage_data =  await fetchStoragePartQuantityByFactoryID(selectedPartId,order.factory_id)
+      if (order.order_type==="Machine" && storage_data.length>0 && storage_data[0].qty>0)
+      {
+        //machine and there is part in storage so send true for in_storage param  
+        insertOrderedParts(
+            selectedPartQty,
+            order.id,
+            selectedPartId,
+            isSampleSentToOffice?? false,
+            selectedPartNote.trim() || null,
+            true,
+            false
+        )
+      }
+      else {
+        //not a machine or part not in storage so send false for in_storage param
+        insertOrderedParts(
+          selectedPartQty,
+          order.id,
+          selectedPartId,
+          isSampleSentToOffice?? false,
+          selectedPartNote.trim() || null,
+          false,
+          false
+      )
+      }
+      toast.success("Part added")
+      resetAddPart()
+
+  } catch (error) {
+      toast.error(`An error occurred: ${error}`);
+  } finally {
+    setLoadingAddPart(false);  
+  }
+
+}
+
 const calculateTotalCost = () => {
   if (orderedParts.length > 0) {
     let totalCost = 0; 
@@ -310,6 +372,12 @@ const handleOrderManagement = async () => {
   
   const handleNavigation = () => {
     navigate('/orders'); 
+  };
+
+  const handleSelectPart = (value: number) => {
+    if (selectedPartId !== value) {
+      setSelectedPartId(value);  
+    } 
   };
 
   if (mode==="view"){
@@ -472,6 +540,9 @@ const handleOrderManagement = async () => {
           )}
           {showAllBudgetApproveButton(current_status.name, orderedParts) && (
             <Button disabled={loadingTableButtons} onClick={()=>setApproveAllBudgetDialogOpen(true)}>{loadingTableButtons? "Approving...": "Approve all budgets"}</Button>
+          )}
+          {showAddPartButton(current_status.name) && (
+            <Button className="bg-blue-700" disabled={loadingAddPart} onClick={()=>setIsAddPartDialogOpen(true)}>{loadingAddPart? "Adding...": "Add Part"}</Button>
           )}
           {
             showAdvanceButton && 
@@ -644,6 +715,99 @@ const handleOrderManagement = async () => {
           </DialogDescription>
           <Button onClick={handleRevertOrderStatus}>Confirm</Button>
         </DialogContent>
+      </Dialog>
+      <Dialog open={isAddPartDialogOpen} onOpenChange={setIsAddPartDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-blue-700">Add Part + </DialogTitle>
+              <DialogDescription>
+                <div>
+                    {/* Left side: Part Selection */}
+                    <div className="space-y-4">
+                        <div className="mt-2">
+                            <Label htmlFor="partId">Select Part</Label>
+                            <ReactSelect
+                                id="partId"
+                                options={parts.filter((part) =>
+                                        part.name.toLowerCase().includes(searchQueryParts.toLowerCase())
+                                    )
+                                    .sort((a, b) => a.name.localeCompare(b.name)) // Sort parts alphabetically
+                                    .map((part) => ({
+                                        value: part.id,
+                                        label: `${part.name} (${part.unit || 'units'})`,
+                                        isDisabled: orderedParts.some((p) => p.part_id === part.id), // Disable parts already added
+                                    }))}
+                                onChange={(selectedOption) =>
+                                    handleSelectPart(Number(selectedOption?.value))
+                                    
+                                }
+                                isSearchable
+                                placeholder="Search or Select a Part"
+                                value={selectedPartId > 0 ? { value: selectedPartId, label: parts.find(p => p.id === selectedPartId)?.name } : null}
+                                className="w-[260px]"
+                                
+                            />
+                        </div>
+
+                        {/* Setting QTY */}
+                        <div className="flex flex-col space-y-2">
+                            <Label htmlFor="quantity" className="font-medium"> {`Quantity${selectedPartId !== -1 ? ` in ${parts.find((p) => p.id === selectedPartId)?.unit || ''}` : ''}`}</Label>
+                            <input
+                                id="quantity"
+                                type="number"
+                                value={selectedPartQty >= 0 ? selectedPartQty : ''}
+                                onChange={e => setSelectedPartQty(Number(e.target.value))}
+                                placeholder={
+                                  selectedPartId !== -1
+                                        ? `Enter quantity in ${parts.find((p) => p.id === selectedPartId)?.unit || 'units'}`
+                                        : 'Enter quantity'
+                                }
+                                className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        
+                    
+
+                        {/* Sample Sent to Office */}
+                        <div className="flex items-center gap-2 leading-none">
+                            <label
+                                htmlFor="sampleSentToOffice"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                                Is Sample Sent to Office?
+                            </label>
+                            <Checkbox
+                                id="sampleSentToOffice"
+                                checked={isSampleSentToOffice}
+                                onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
+                                className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
+                                />
+                            <p className="text-sm text-muted-foreground">
+                                {isSampleSentToOffice ? "Yes" : "No"}
+                            </p>
+                        </div>
+
+
+                        {/* Note */}
+                        <div className="space-y-2">
+                            <Label htmlFor="note" className="font-medium">Note (Optional)</Label>
+                            <Textarea
+                                id="note"
+                                value={selectedPartNote || ''}
+                                onChange={e => setSelectedPartNote(e.target.value)}
+                                placeholder="Enter any notes"
+                                className="min-h-24 w-3/4"  
+                            />
+                        </div>
+                    </div>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button className="bg-blue-700" onClick={handleAddPart}>Confirm</Button>
+              <Button className="bg-red-800" onClick={resetAddPart}>Reset</Button>
+            </DialogFooter>
+          </DialogContent>
       </Dialog>
 
       </Card>

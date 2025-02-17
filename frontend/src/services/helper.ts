@@ -140,7 +140,11 @@ export const managePermission = (status: string, role: string): boolean => {
           return true;
         } else if (role === "directorTechnical") {
           return true;
-        }
+        } else if (role === "department") {
+          return true;
+        } else if (role === "finance") {
+          return true;
+        } 
         break;
   
       case "Order Sent To Head Office":
