@@ -21,7 +21,6 @@ const MachineManagementCard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isAddingMachine, setIsAddingMachine] = useState(false);
 
-
   const factoryFromUrl = searchParams.get("factory");
   const sectionFromUrl = searchParams.get("factorySection");
 
@@ -57,7 +56,7 @@ const MachineManagementCard = () => {
   const handleFactoryChange = (value: string) => {
     const newFactoryId = Number(value);
     setSelectedFactoryId(newFactoryId);
-      setSearchParams((prevParams) => {
+    setSearchParams((prevParams) => {
       const updatedParams = new URLSearchParams(prevParams);
       updatedParams.set("factory", newFactoryId.toString());
       updatedParams.delete("factorySection");
@@ -68,7 +67,7 @@ const MachineManagementCard = () => {
   const handleFactorySectionChange = (value: string) => {
     const newFactorySectionId = Number(value);
     setSelectedFactorySectionId(newFactorySectionId);
-      setSearchParams((prevParams) => {
+    setSearchParams((prevParams) => {
       const updatedParams = new URLSearchParams(prevParams);
       updatedParams.set("factorySection", newFactorySectionId.toString());
       return updatedParams;
@@ -119,11 +118,10 @@ const MachineManagementCard = () => {
     }
   }, [selectedFactorySectionId]);
 
-
   const loadMachines = async (factorySectionId: number) => {
     try {
       const response = await fetchAllMachines(factorySectionId);
-      setMachines(response); // Directly use the array
+      setMachines(response);
     } catch (error) {
       toast.error("Failed to load machines.");
     }
@@ -161,10 +159,49 @@ const MachineManagementCard = () => {
 
   return (
     <>
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-gray-800">Configure Machine</h2>
+        <div className="relative group">
+          <Button
+            onClick={() => {
+              if (isAddingMachine) {
+                setIsAddingMachine(false);
+                setNewMachineName("");
+              } else {
+                setIsAddingMachine(true);
+              }
+            }}
+            disabled={!selectedFactorySectionId}
+            className={`flex items-center gap-2 ${
+              isAddingMachine 
+                ? "bg-red-600 text-white hover:bg-red-700" 
+                : selectedFactorySectionId
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-400 text-white cursor-not-allowed"
+            }`}
+          >
+            {isAddingMachine ? (
+              <>
+                <XCircle size={18} />
+                Cancel
+              </>
+            ) : (
+              <>
+                <PlusCircle size={18} />
+                Add Machine
+              </>
+            )}
+          </Button>
+          {!selectedFactorySectionId && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Please select a factory section first
+            </div>
+          )}
+        </div>
+      </div>
 
-      <div className="flex items-center space-x-4 ">
-          {/* Factory Selection - Always a Dropdown */}
+      <div className="flex items-center space-x-4 mb-4">
+        {/* Factory Selection */}
         <Select 
           value={selectedFactoryId?.toString() || ""} 
           onValueChange={handleFactoryChange}
@@ -185,7 +222,7 @@ const MachineManagementCard = () => {
           </SelectContent>
         </Select>
 
-        {/* Factory Section Selection - Always a Dropdown */}
+        {/* Factory Section Selection */}
         <Select 
           value={selectedFactorySectionId?.toString() || ""} 
           onValueChange={handleFactorySectionChange} 
@@ -203,100 +240,67 @@ const MachineManagementCard = () => {
           </SelectContent>
         </Select>
 
-        
+        {/* Add Machine Form */}
+        <AnimatePresence mode="wait">
+          {isAddingMachine && (
+            <motion.div
+              key="add-input"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -200 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-4"
+            >
+              <Input
+                placeholder="Machine Name"
+                value={newMachineName}
+                onChange={(e) => setNewMachineName(e.target.value)}
+                className="w-[160px]"
+              />
 
-        </div>
+              <Button
+                onClick={handleAddMachine}
+                className="bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2 h-10"
+              >
+                <PlusCircle size={18} />
+                Create
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* Add New Machine */}
-        {selectedFactorySectionId && (
-          <>
-           <AnimatePresence mode="wait">
-              {!isAddingMachine ? (
-                  <motion.div
-                  key="add-button"
-                  initial={{ opacity: 0, x: -50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 200 }}
-                  transition={{ duration: 0.2 }}
-                  className=""  // Ensures it does not affect layout
-
-                  >
-                  <Button 
-                      onClick={() => setIsAddingMachine(true)}
-                      className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
-                      >
-                      <PlusCircle size={18} />
-                      Add Machine
-                  </Button>
-                  </motion.div>
-              ) : (
-                  <div className="flex items-center gap-4">
-                  {/* Select Part */}
-                  <Input
-                      value={newMachineName}
-                      onChange={(e) => setNewMachineName((e.target.value))}
-                      className="w-20 text-center border rounded-md"
-                      min={1}
-                  />
-
-                  {/* Confirm (✔) Button */}
-                  <button 
-                      onClick={handleAddMachine}
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-                  >
-                      <Check size={18} />
-                  </button>
-
-                  {/* Cancel (✖) Button */}
-                  <button 
-                      onClick={() => setIsAddingMachine(false)}
-                      className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                  >
+      {/* Machine List */}
+      {selectedFactorySectionId && (
+        <div className="border rounded-md shadow-sm max-h-80 overflow-y-auto relative">
+          <Table>
+            <TableHeader className="top-0 bg-white shadow-sm z-10">
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {machines.map((machine) => (
+                <TableRow key={machine.id}>
+                  <TableCell>{machine.id}</TableCell>
+                  <TableCell>{machine.name}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleDeleteMachine(machine.id)}
+                      className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                    >
                       <XCircle size={18} />
-                  </button>
-                  </div>
-              )}
-              </AnimatePresence>
-
-            {/* Scrollable Machine List */}
-            <div className="max-h-64 overflow-y-auto border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {machines.length > 0 ? (
-                    machines.map((machine) => (
-                      <TableRow key={machine.id}>
-                        <TableCell>{machine.id}</TableCell>
-                        <TableCell>{machine.name}</TableCell>
-                        <TableCell>
-                          <button
-                            onClick={() => handleDeleteMachine(machine.id)}
-                            className="text-red-600 hover:text-red-800 flex items-center gap-1"
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-gray-500 py-4">
-                        No Machines Found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-       </>
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </>
   );
 };
 

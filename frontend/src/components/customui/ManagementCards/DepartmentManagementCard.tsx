@@ -77,37 +77,52 @@ const DepartmentManagementCard = () => {
 
   return (
     <>
-      {/* Heading */}
-      <h2 className="text-xl font-semibold text-gray-800">Configure Departments</h2>
-
-      <div className="border-b pb-4">
-        {/* Add Department Button */}
-        <AnimatePresence mode="wait">
-          {!isAddingDepartment ? (
-            <motion.div
-              key="add-button"
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 200 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Button
-                onClick={() => setIsAddingDepartment(true)}
-                className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 w-40 justify-center"
-              >
+      {/* Heading and Add Button */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Configure Departments</h2>
+        <div className="relative group">
+          <Button
+            onClick={() => {
+              if (isAddingDepartment) {
+                setIsAddingDepartment(false);
+                setNewDepartmentName("");
+              } else {
+                setIsAddingDepartment(true);
+              }
+            }}
+            className={`flex items-center gap-2 ${
+              isAddingDepartment 
+                ? "bg-red-600 text-white hover:bg-red-700" 
+                : "bg-green-600 text-white hover:bg-green-700"
+            }`}
+          >
+            {isAddingDepartment ? (
+              <>
+                <X size={18} />
+                Cancel
+              </>
+            ) : (
+              <>
                 <PlusCircle size={18} />
                 Add Department
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="add-input"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -200 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center gap-4"
-            >
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Add Department Form */}
+      <AnimatePresence mode="wait">
+        {isAddingDepartment && (
+          <motion.div
+            key="add-form"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mb-4 overflow-hidden"
+          >
+            <div className="flex items-center gap-4">
               <Input
                 placeholder="Department Name"
                 value={newDepartmentName}
@@ -121,20 +136,10 @@ const DepartmentManagementCard = () => {
               >
                 <Plus size={18} />
               </button>
-
-              <button
-                onClick={() => {
-                  setIsAddingDepartment(false);
-                  setNewDepartmentName("");
-                }}
-                className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-              >
-                <X size={18} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Departments Table */}
       <div className="rounded-md shadow-md max-h-[500px] overflow-y-auto mt-4">

@@ -251,11 +251,51 @@ const MachinePartsManagementCard = () => {
 
   return (
     <>  
-      {/* Heading */}
-      <h2 className="text-xl font-semibold text-gray-800">Configure Machine Parts</h2>
+      {/* Heading and Add Button */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Configure Machine Parts</h2>
+        <div className="relative group">
+          <Button 
+            onClick={() => {
+              if (isAddingPart) {
+                setIsAddingPart(false);
+                setSelectedPartId(null);
+                setPartQty(1);
+              } else {
+                setIsAddingPart(true);
+              }
+            }}
+            disabled={!selectedMachineId}
+            className={`flex items-center gap-2 ${
+              isAddingPart 
+                ? "bg-red-600 text-white hover:bg-red-700" 
+                : selectedMachineId
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-400 text-white cursor-not-allowed"
+            }`}
+          >
+            {isAddingPart ? (
+              <>
+                <X size={18} />
+                Cancel
+              </>
+            ) : (
+              <>
+                <PlusCircle size={18} />
+                Add Part
+              </>
+            )}
+          </Button>
+          {!selectedMachineId && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Please select a machine first
+            </div>
+          )}
+        </div>
+      </div>
   
       {/* Selection Controls - Horizontal Layout */}
-      <div className="flex items-center space-x-4 ">
+      <div className="flex items-center space-x-4 overflow-x-hidden mb-4">
         {/* Factory Selection - Always a Dropdown */}
         <Select 
           value={selectedFactoryId?.toString() || ""} 
@@ -316,170 +356,152 @@ const MachinePartsManagementCard = () => {
         </Select>
       </div>
 
-      <div className="border-b pb-4">
-        
-    {/* Add Part Button - Shows Inputs When Clicked */}
-    <AnimatePresence mode="wait">
-    {!isAddingPart ? (
-        <motion.div
-        key="add-button"
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 200 }}
-        transition={{ duration: 0.2 }}
-        className=""  // Ensures it does not affect layout
-
-        >
-        <Button 
-            onClick={() => setIsAddingPart(true)}
-            className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
-            >
-            <PlusCircle size={18} />
-            Add Part
-        </Button>
-        </motion.div>
-    ) : (
-        <div className="flex items-center gap-4">
-        {/* Select Part */}
-        <ReactSelect
-            id="partId"
-            options={parts
-                .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
-                .map((part) => ({
+      {/* Add Part Form */}
+      <AnimatePresence mode="wait">
+        {isAddingPart && (
+          <motion.div
+            key="add-form"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mb-4 overflow-hidden"
+          >
+            <div className="flex items-center gap-4">
+              {/* Select Part */}
+              <ReactSelect
+                id="partId"
+                options={parts
+                  .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
+                  .map((part) => ({
                     value: part.id,
                     label: `${part.name} (${part.unit || "units"})`,
                     isDisabled: machineParts.some((mp) => mp.parts.id === part.id),
-                }))
-            }
-            onChange={(selectedOption) => setSelectedPartId(Number(selectedOption?.value))}
-            isSearchable
-            placeholder="Search or Select a Part"
-            value={selectedPartId ? { value: selectedPartId, label: parts.find((p) => p.id === selectedPartId)?.name } : null}
-            className="w-[260px]"
-        />
+                  }))
+                }
+                onChange={(selectedOption) => setSelectedPartId(Number(selectedOption?.value))}
+                isSearchable
+                placeholder="Search or Select a Part"
+                value={selectedPartId ? { value: selectedPartId, label: parts.find((p) => p.id === selectedPartId)?.name } : null}
+                className="w-[260px]"
+              />
 
-        {/* Input for Quantity */}
-        <Input
-            type="number"
-            value={partQty}
-            onChange={(e) => setPartQty(Number(e.target.value))}
-            className="w-20 text-center border rounded-md"
-            min={1}
-        />
+              {/* Input for Quantity */}
+              <Input
+                type="number"
+                value={partQty}
+                onChange={(e) => setPartQty(Number(e.target.value))}
+                className="w-20 text-center border rounded-md"
+                min={1}
+              />
 
-        {/* Confirm (✔) Button */}
-        <button 
-            onClick={handleAddPart}
-            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-        >
-            <Plus size={18} />
-        </button>
-
-        {/* Cancel (✖) Button */}
-        <button 
-            onClick={() => setIsAddingPart(false)}
-            className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-        >
-            <X size={18} />
-        </button>
-        </div>
-    )}
-    </AnimatePresence>
-</div>
+              {/* Confirm (✔) Button */}
+              <button 
+                onClick={handleAddPart}
+                className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
   
       {/* Machine Parts Table */}
       {selectedMachineId && (
-        <div className=" rounded-md shadow-md max-h-[500px] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-100">
-                <TableHead>Part ID</TableHead>
-                <TableHead>Part Name</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Req Qty</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {machineParts.map((part) => (
-                <TableRow key={part.id}>
-                  <TableCell>{part.parts.id}</TableCell>
-                  <TableCell>
-                    <Link to={`/viewpart/${part.parts.id}`} className="text-blue-600 hover:underline">
-                      {part.parts.name}
-                    </Link>
-                  </TableCell>
-                  {/* Editable Quantity Fields */}
-                  <TableCell>
-                    {editingPartId === part.id ? (
-                      <input
-                        type="number"
-                        value={editedQty ?? part.qty}
-                        onChange={(e) => setEditedQty(Number(e.target.value))}
-                        className="border rounded-md p-1 w-16 text-center"
-                      />
-                    ) : (
-                      part.qty
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingPartId === part.id ? (
-                      <input
-                        type="number"
-                        value={editedReqQty ?? part.req_qty}
-                        onChange={(e) => setEditedReqQty(Number(e.target.value))}
-                        className="border rounded-md p-1 w-16 text-center"
-                      />
-                    ) : (
-                      part.req_qty
-                    )}
-                  </TableCell>
-  
-                  {/* Actions */}
-                  <TableCell className="flex gap-2">
-                    {editingPartId === part.id ? (
-                      <>
-                      {/* Cancel Edit Button */}
-                        <button
-                          onClick={() => setEditingPartId(null)}
-                          className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                        >
-                          <PencilOff size={18} />
-                        </button>
-
-                        {/* Confirm Edit Button */}
-                        <button
-                          onClick={() => handleUpdateMachineParts(part)}
-                          className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1 rounded-md border border-green-600 hover:bg-blue-100 transition"
-                        >
-                          <Check size={18} />
-                        </button>
-                        
-                      </>
-                    ) : (
-                      <>
-                        {/* Edit Button */}
-                        <button
-                          onClick={() => startEditing(part)}
-                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
-                        >
-                          <PencilRuler size={18} />
-                        </button>
-  
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleDeleteMachinePart(part.id)}
-                          className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
-                        >
-                          <XCircle size={18} />
-                        </button>
-                      </>
-                    )}
-                  </TableCell>
+        <div className="rounded-md shadow-md max-h-[500px] overflow-y-auto">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-100">
+                  <TableHead>Part ID</TableHead>
+                  <TableHead>Part Name</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Req Qty</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {machineParts.map((part) => (
+                  <TableRow key={part.id}>
+                    <TableCell>{part.parts.id}</TableCell>
+                    <TableCell>
+                      <Link to={`/viewpart/${part.parts.id}`} className="text-blue-600 hover:underline">
+                        {part.parts.name}
+                      </Link>
+                    </TableCell>
+                    {/* Editable Quantity Fields */}
+                    <TableCell>
+                      {editingPartId === part.id ? (
+                        <input
+                          type="number"
+                          value={editedQty ?? part.qty}
+                          onChange={(e) => setEditedQty(Number(e.target.value))}
+                          className="border rounded-md p-1 w-16 text-center"
+                        />
+                      ) : (
+                        part.qty
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingPartId === part.id ? (
+                        <input
+                          type="number"
+                          value={editedReqQty ?? part.req_qty}
+                          onChange={(e) => setEditedReqQty(Number(e.target.value))}
+                          className="border rounded-md p-1 w-16 text-center"
+                        />
+                      ) : (
+                        part.req_qty
+                      )}
+                    </TableCell>
+    
+                    {/* Actions */}
+                    <TableCell className="flex gap-2">
+                      {editingPartId === part.id ? (
+                        <>
+                        {/* Cancel Edit Button */}
+                          <button
+                            onClick={() => setEditingPartId(null)}
+                            className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
+                          >
+                            <PencilOff size={18} />
+                          </button>
+
+                          {/* Confirm Edit Button */}
+                          <button
+                            onClick={() => handleUpdateMachineParts(part)}
+                            className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1 rounded-md border border-green-600 hover:bg-blue-100 transition"
+                          >
+                            <Check size={18} />
+                          </button>
+                          
+                        </>
+                      ) : (
+                        <>
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => startEditing(part)}
+                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded-md border border-blue-600 hover:bg-blue-100 transition"
+                          >
+                            <PencilRuler size={18} />
+                          </button>
+      
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => handleDeleteMachinePart(part.id)}
+                            className="text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded-md border border-red-600 hover:bg-red-100 transition"
+                          >
+                            <XCircle size={18} />
+                          </button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </>
