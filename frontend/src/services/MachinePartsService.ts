@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 import { supabase_client } from "./SupabaseClient";
+import { MachinePart } from "@/types";
 
 
 export const fetchMachineParts = async (
@@ -49,7 +50,7 @@ export const fetchMachineParts = async (
         );
     }
 
-    return filteredData;
+    return filteredData as unknown as MachinePart[];
 };
 
 export const upsertMachineParts = async ( part_id: number, machine_id: number, quantity: number) => {
@@ -69,16 +70,23 @@ export const upsertMachineParts = async ( part_id: number, machine_id: number, q
         
 }
 
-// export const updateMachinePartQty = async (machine_id: number, part_id: number, new_quantity: number) => {
-//     const { error } = await supabase_client
-//     .from('storage_parts')
-//     .update({ qty: new_quantity })
-//     .eq('part_id', part_id).eq('machine_id', machine_id)
+export const updateMachinePartQuantities = async (
+    id: number, // Primary key ID
+    quantity: number,
+    req_qty: number
+  ) => {
+    const { error } = await supabase_client
+      .from("machine_parts")
+      .update({ qty: quantity, req_qty: req_qty })
+      .eq("id", id);
+  
+    if (error) {
+      toast.error("Error updating machine part quantities: " + error.message);
+    } else {
+      toast.success("Machine part quantities updated successfully.");
+    }
+  };
 
-//     if (error){
-//         toast.error(error.message)
-//     }
-// }
 
 export const updateMachinePartQty = async (
     machine_id: number,
@@ -156,4 +164,19 @@ export const updateRequiredQuantity = async (partId: number, newCurQty: number, 
     }
 
     toast.success('Required quantity updated successfully.');
+};
+
+export const deleteMachinePart = async (machinePartId: number) => {
+    const { error } = await supabase_client
+        .from('machine_parts')
+        .delete()
+        .eq('id', machinePartId);
+
+    if (error) {
+        toast.error("Failed to delete machine part: " + error.message);
+        return false;
+    }
+
+    toast.success("Machine part deleted successfully!");
+    return true;
 };

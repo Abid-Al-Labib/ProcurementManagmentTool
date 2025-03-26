@@ -73,7 +73,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
             <TableCell>
                 {isEditing ? (
                     <>
-                        <Button onClick={handleUpdate} className="ml-2">
+                        <Button onClick={handleUpdate} className="ml-auto">
                             Save
                         </Button>
                         <Button onClick={() => setIsEditing(false)} className="ml-2">
@@ -81,7 +81,7 @@ const MachinePartsRow: React.FC<MachinePartsRowProps> = ({ MachinePart, onRefres
                         </Button>
                     </>
                 ) : (
-                    <Button onClick={() => setIsEditing(true)} className="ml-2">
+                    <Button onClick={() => setIsEditing(true)} className="ml-auto">
                         Edit
                     </Button>
                 )}

@@ -9,45 +9,27 @@ export const fetchOrders = async ({
     page = 1,
     limit = 10,
     showCompleted,
-    query = '',
-    reqNum = '',
-    searchDate,
-    dateFilterType, // This is passed along with searchDate
-    statusId,
-    departmentId,
-    factoryId,
-    factorySectionId,
-    machineId,
-    orderType,
+    filters = {}
 }: {
     page: number;
     limit: number;
     showCompleted: boolean;
-    query?: string;
-    reqNum?: string;
-    searchDate?: Date;
-    dateFilterType?: 'on' | 'before' | 'after'; // Define filterType for date filtering
-    statusId?: number;
-    departmentId?: number;
-    factoryId?: number;
-    factorySectionId?: number;
-    machineId?: number;
-    orderType?: string;
+    filters?: {
+        searchQuery?: string;
+        reqNumQuery?: string;
+        selectedDate?: Date;
+        dateFilterType?: number;
+        selectedStatusId?: number;
+        selectedDepartmentId?: number;
+        selectedFactoryId?: number;
+        selectedFactorySectionId?: number;
+        selectedMachineId?: number;
+        selectedOrderType?: string;
+    };
 }) => {
 
-    console.log(`Fetching orders with parameters: 
-        Page: ${page}, 
-        Limit: ${limit}, 
-        Query: ${query}, 
-        Req Num: ${reqNum},
-        Search Date: ${searchDate}, 
-        Status ID: ${statusId}, 
-        Department ID: ${departmentId}, 
-        Factory ID: ${factoryId},
-        Factory Section ID: ${factorySectionId},
-        Machine ID: ${machineId},
-        OrderType: ${orderType}`
-    );
+    console.log(`Fetching orders with parameters: Page: ${page}, Limit: ${limit}, Filters:`, filters);
+    console.log("ID   ", filters.searchQuery)
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -79,12 +61,14 @@ export const fetchOrders = async ({
         .range(from, to)
         .order('id', { ascending: false });
 
-    if (query) {
-        queryBuilder = queryBuilder.eq('id', query);
+    if (filters.searchQuery) {
+        console.log("ID SEARCH")
+        console.log(queryBuilder)
+        queryBuilder = queryBuilder.eq('id', filters.searchQuery);
     }
 
-    if (reqNum) {
-        queryBuilder = queryBuilder.eq('req_num', reqNum);
+    if (filters.reqNumQuery) {
+        queryBuilder = queryBuilder.eq('req_num', filters.reqNumQuery);
     }
 
     if (!showCompleted){
@@ -94,56 +78,56 @@ export const fetchOrders = async ({
         queryBuilder = queryBuilder.eq('current_status_id', 8)
     }
 
-    if (searchDate && dateFilterType) {
-        const searchDateStr = searchDate.toISOString().split('T')[0];
+    if (filters.selectedDate && filters.dateFilterType) {
+        const searchDateStr = filters.selectedDate.toISOString().split('T')[0];
 
         // Convert to Bangladesh time for start and end of the day
         const startOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T00:00:00`);
         const endOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T23:59:59`);
 
         // Apply date range based on the filter type
-        if (dateFilterType === 'on') {
+        if (filters.dateFilterType === 1) {
             // For "on" date, search within the specific day
             queryBuilder = queryBuilder.gte('created_at', startOfDayUTC)
                 .lte('created_at', endOfDayUTC);
-        } else if (dateFilterType === 'before') {
+        } else if (filters.dateFilterType === 2) {
             // For "before" the date, search for all orders before the start of the day
             queryBuilder = queryBuilder.lte('created_at', startOfDayUTC);
-        } else if (dateFilterType === 'after') {
+        } else if (filters.dateFilterType === 3) {
             // For "after" the date, search for all orders after the end of the day
             queryBuilder = queryBuilder.gte('created_at', endOfDayUTC);
         }
 
-        console.log('Fetching orders with filterType:', dateFilterType, 'search date:', startOfDayUTC, 'to', endOfDayUTC);
+        console.log('Fetching orders with filterType:', filters.dateFilterType, 'search date:', startOfDayUTC, 'to', endOfDayUTC);
     }
 
-    if (statusId) {
-        queryBuilder = queryBuilder.eq('current_status_id', statusId);
+    if (filters.selectedStatusId) {
+        queryBuilder = queryBuilder.eq('current_status_id', filters.selectedStatusId);
     }
 
-    if (departmentId) {
-        console.log('Fetching orders with deptID ', departmentId);
-        queryBuilder = queryBuilder.eq('department_id', departmentId);
+    if (filters.selectedDepartmentId) {
+        console.log('Fetching orders with deptID ', filters.selectedDepartmentId);
+        queryBuilder = queryBuilder.eq('department_id', filters.selectedDepartmentId);
     }
 
-    if (factoryId) {
-        console.log('Fetching orders with factoryID ', factoryId);
-        queryBuilder = queryBuilder.eq('factory_id', factoryId);
+    if (filters.selectedFactoryId) {
+        console.log('Fetching orders with factoryID ', filters.selectedFactoryId);
+        queryBuilder = queryBuilder.eq('factory_id', filters.selectedFactoryId);
     }
 
-    if (factorySectionId) {
-        console.log('Fetching orders with factorySectionID ', factorySectionId);
-        queryBuilder = queryBuilder.eq('factory_section_id', factorySectionId);
+    if (filters.selectedFactorySectionId) {
+        console.log('Fetching orders with factorySectionID ', filters.selectedFactorySectionId);
+        queryBuilder = queryBuilder.eq('factory_section_id', filters.selectedFactorySectionId);
     }
 
-    if (machineId) {
-        console.log('Fetching orders with machineID ', machineId);
-        queryBuilder = queryBuilder.eq('machine_id', machineId);
+    if (filters.selectedMachineId) {
+        console.log('Fetching orders with machineID ', filters.selectedMachineId);
+        queryBuilder = queryBuilder.eq('machine_id', filters.selectedMachineId);
     }
 
-    if (orderType && orderType !== 'all') {
-        console.log('Fetching orders with orderType', orderType);
-        queryBuilder = queryBuilder.eq('order_type', orderType);
+    if (filters.selectedOrderType && filters.selectedOrderType !== 'all') {
+        console.log('Fetching orders with orderType', filters.selectedOrderType);
+        queryBuilder = queryBuilder.eq('order_type', filters.selectedOrderType);
     }
 
     const { data, error, count } = await queryBuilder;

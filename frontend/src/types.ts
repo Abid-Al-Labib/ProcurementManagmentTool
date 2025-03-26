@@ -6,7 +6,7 @@ export type Department = Tables<"departments">
 export type Status = Tables<"statuses">
 export type Profile = Tables<"profiles">
 export type Factory = Tables<"factories">
-export type MachinePart = Tables<"machine_parts">
+// export type MachinePart = Tables<"machine_parts">
 export type StoragePart = Tables<"storage_parts">
 export type ApplicationSettings = Tables<"app_settings">
 
@@ -24,6 +24,16 @@ export type Machine = {
     is_running: boolean,
     factory_section_id: number,
     factory_sections: FactorySection
+}
+
+export type MachinePart = {
+    id: number;
+    machine_id: number;
+    part_id: number;
+    qty: number;
+    req_qty: number | null
+    parts: Part
+    machines: Machine
 }
 
 export type FactorySection = {
@@ -87,3 +97,22 @@ export type StatusTracker = {
     profiles: Profile,
     statuses: Status
 };
+
+export type Filter = {
+    searchType: string | undefined;
+    searchQuery: string | undefined;
+    reqNumQuery: string | undefined;
+    selectedDate?: Date | undefined;
+    dateFilterType: number | undefined; // 1 = On, 2 = Before, 3 = After
+    selectedFactoryId: number | undefined;
+    selectedFactorySectionId: number | undefined;
+    selectedMachineId: number | undefined;
+    selectedDepartmentId: number | undefined;
+    selectedStatusId: number | undefined;
+    selectedOrderType: string | undefined;
+    showCompletedOrders: boolean | undefined;
+    
+};
+
+export type ManagementType = "factory" | "factorySections" | "machines" | "machineParts" | "departments";
+ 

@@ -3,103 +3,82 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table';
 import LinkedOrdersRow from './LinkedOrdersRow';
 import SearchAndFilter from './SearchAndFilter';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
+import { convertBDTimeToUtc } from '@/services/helper';
 
 interface LinkedOrdersTableProps {
     linkedOrderedParts: OrderedPart[];
 }
 
 const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedParts }) => {
-    const profile = useAuth().profile
-    
-    const [filters, setFilters] = useState({
-        searchQuery: '',
-        selectedDate: undefined as Date | undefined,
-        selectedFactoryId: -1,
-        selectedFactorySectionId: -1,
-        selectedMachineId: -1,
-        selectedDepartmentId: -1,
-        selectedStatusId: -1,
-    });
+    const profile = useAuth().profile;
+    const [searchParams] = useSearchParams();
 
-    const handleApplyFilters = (newFilters: typeof filters) => {
-        setFilters(newFilters);
-        // console.log('Applied Filters:', newFilters); // Debug log for applied filters
-    };
+    const filterConfig = [
+        {type: "id", label: ["Enter Order ID","Enter Requistion Number"]},
+        {type: "date"},
+        {type: "factory"},
+        {type: "factorySection"},
+        {type: "machine"},
+    ];
 
-    const handleResetFilters = () => {
-        const resetFilters = {
-            searchQuery: '',
-            selectedDate: undefined,
-            selectedFactoryId: -1,
-            selectedFactorySectionId: -1,
-            selectedMachineId: -1,
-            selectedDepartmentId: -1,
-            selectedStatusId: -1,
-        };
-        setFilters(resetFilters);
-    };
+    const [filteredParts, setFilteredParts] = useState<OrderedPart[]>(linkedOrderedParts);
 
-    const filteredParts = linkedOrderedParts.filter((part) => {
-        const matchesQuery = filters.searchQuery
-            ? part.order_id.toString() === filters.searchQuery
-            : true;
+    useEffect(() => {
+        const searchQuery = searchParams.get("query") || "";
+        const reqNumQuery = searchParams.get("reqNum") || "";
+        const selectedDate = searchParams.get("date") ? new Date(searchParams.get("date")!) : undefined;
+        const dateFilterType = searchParams.get("dateFilterType") ? Number(searchParams.get("dateFilterType")) : 1;
+        const selectedFactoryId = searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined;
+        const selectedFactorySectionId = searchParams.get("section") ? Number(searchParams.get("section")) : undefined;
+        const selectedMachineId = searchParams.get("machine") ? Number(searchParams.get("machine")) : undefined;
 
-        const matchesDate = filters.selectedDate
-            ? new Date(part.orders.created_at).toDateString() === filters.selectedDate.toDateString()
-            : true;
+        const filtered = linkedOrderedParts.filter((part) => {
+            const matchesQuery = searchQuery ? part.order_id.toString() === searchQuery : true;
+            const matchesReqNumQuery = reqNumQuery ? part.orders.req_num.toString() === reqNumQuery : true;
+            const matchesDate = selectedDate ? (() => {
+                const searchDateStr = selectedDate.toISOString().split('T')[0];
+            
+                // Convert selected date to UTC start and end using Bangladesh time
+                const startOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T00:00:00`);
+                const endOfDayUTC = convertBDTimeToUtc(`${searchDateStr}T23:59:59`);
+            
+                if (dateFilterType === 1) {
+                    return new Date(part.orders.created_at) >= new Date(startOfDayUTC) &&
+                           new Date(part.orders.created_at) <= new Date(endOfDayUTC);
+                } else if (dateFilterType === 2) {
+                    return new Date(part.orders.created_at) <= new Date(startOfDayUTC);
+                } else if (dateFilterType === 3) {
+                    return new Date(part.orders.created_at) >= new Date(endOfDayUTC);
+                }
+                return true;
+            })() : true;
+            
+            const matchesFactory = selectedFactoryId ? part.orders.factory_id === selectedFactoryId : true;
+            const matchesFactorySection = selectedFactorySectionId ? part.orders.factory_section_id === selectedFactorySectionId : true;
+            const matchesMachineId = selectedMachineId ? part.orders.machine_id === selectedMachineId : true;
 
-        // console.log("TESTING MATCHES FACTORY", filters.selectedFactoryId);
+            return matchesQuery && matchesReqNumQuery && matchesDate && matchesFactory && matchesFactorySection && matchesMachineId;
+        });
 
-        const matchesFactory = (filters.selectedFactoryId !== -1 && filters.selectedFactoryId !== undefined)
-            ? part.orders.factory_id === filters.selectedFactoryId
-            : true;
+        setFilteredParts(filtered);
+    }, [searchParams, linkedOrderedParts]); // Runs whenever filters or linkedOrderedParts change
 
-        const matchesFactorySection = (filters.selectedFactorySectionId !== -1 && filters.selectedFactorySectionId !== undefined)
-            ? part.orders.factory_section_id === filters.selectedFactorySectionId
-            : true;
-
-        const matchesMachineId = (filters.selectedMachineId !== -1 && filters.selectedMachineId !== undefined)
-            ? part.orders.machine_id === filters.selectedMachineId
-            : true;
-
-        // console.log("matchesFactory:", matchesFactory); // Log to see the state of matchesFactory
-
-        return (
-            matchesQuery &&
-            matchesDate &&
-            matchesFactory &&
-            matchesFactorySection &&
-            matchesMachineId
-        );
-    });
-
-    // console.log('Filtered Parts:', filteredParts); // Debug log for filtered parts
-
-        return (
+    return (
         <div>
             <Card x-chunk="dashboard-06-chunk-0" className="mt-5">
-                <CardHeader className="flex justify-between ">
-                        <div>
-                            <CardTitle>Past Orders</CardTitle>
-                            <CardDescription>
-                                This is a list of orders where this part was previously purchased.
-                            </CardDescription>
-                        </div>
-                        <div className="ml-auto"> {/* Use ml-auto to push the button to the right */}
-                            <SearchAndFilter
-                                filterConfig={[
-                                    { type: 'id', label: 'Enter Order ID' },
-                                    { type: 'date', label: 'Select Date' },
-                                    { type: 'factory', label: 'Factory' },
-                                    { type: 'factorySection', label: 'Factory Section' },
-                                    { type: 'machine', label: 'Machine' },
-                                ]}
-                                onApplyFilters={handleApplyFilters}
-                                onResetFilters={handleResetFilters}
-                            />
-                        </div>
+                <CardHeader className="flex justify-between">
+                    <div>
+                        <CardTitle>Past Orders</CardTitle>
+                        <CardDescription>
+                            This is a list of orders where this part was previously purchased.
+                        </CardDescription>
+                    </div>
+                    <div className="ml-auto">
+                        <SearchAndFilter filterConfig={filterConfig} />
+                    </div>
                 </CardHeader>
 
                 <CardContent>
@@ -110,9 +89,13 @@ const LinkedOrdersTable: React.FC<LinkedOrdersTableProps> = ({ linkedOrderedPart
                                 <TableHead className="hidden md:table-cell">Created at</TableHead>
                                 <TableHead>Machine</TableHead>
                                 <TableHead className="hidden md:table-cell">Qty</TableHead>
-                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Brand</TableHead>}
-                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Unit Cost</TableHead>}
-                                {(profile?.permission === 'admin' || profile?.permission=== 'finance') && <TableHead className="hidden md:table-cell">Vendor</TableHead>}
+                                {(profile?.permission === 'admin' || profile?.permission === 'finance') && (
+                                    <>
+                                        <TableHead className="hidden md:table-cell">Brand</TableHead>
+                                        <TableHead className="hidden md:table-cell">Unit Cost</TableHead>
+                                        <TableHead className="hidden md:table-cell">Vendor</TableHead>
+                                    </>
+                                )}
                                 <TableHead className="hidden md:table-cell">Purchased Date</TableHead>
                                 <TableHead className="hidden md:table-cell">Sent To Factory Date</TableHead>
                                 <TableHead className="hidden md:table-cell">Received By Factory Date</TableHead>

@@ -63,7 +63,6 @@ const EditPartPage = () => {
             const part_id = parseInt(id);
 
             const response = await editPart(part_id,name,unit,description)
-            console.log(response)
             if (response){
                 toast.success("Part Updated")
 

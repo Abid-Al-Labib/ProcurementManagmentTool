@@ -5,15 +5,15 @@ import { Textarea } from "../components/ui/textarea"
 import NavigationBar from "../components/customui/NavigationBar"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CirclePlus, CircleX, Loader2, CircleCheck, X} from "lucide-react"
-import { useEffect, useState, useRef} from "react"
+import { CirclePlus, CircleX, Loader2, CircleCheck, X } from "lucide-react"
+import { useEffect, useState, useRef } from "react"
 import ReactSelect from 'react-select'
-import { fetchOrderByReqNum, fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage } from "@/services/OrdersService";
+import { fetchOrderByReqNumandFactory, insertOrder, insertOrderStorage } from "@/services/OrdersService";
 
 import toast from 'react-hot-toast'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { fetchFactories, fetchFactorySections, fetchDepartments } from '@/services/FactoriesService';
-import { fetchAllMachines, fetchMachines, setMachineIsRunningById } from "@/services/MachineServices"
+import { fetchAllMachines, setMachineIsRunningById } from "@/services/MachineServices"
 import { insertOrderedParts } from '@/services/OrderedPartsService';
 import { fetchAllParts } from "@/services/PartsService"
 import { Part } from "@/types"
@@ -26,7 +26,7 @@ import { fetchAppSettings } from "@/services/AppSettingsService"
 
 
 
-interface Department{
+interface Department {
     id: number;
     name: string;
 }
@@ -35,8 +35,8 @@ interface Factory {
     id: number;
     name: string;
 }
-interface FactorySection{
-    id: number;	
+interface FactorySection {
+    id: number;
     name: string;
     factory_id?: number;
 }
@@ -48,7 +48,7 @@ interface Machine {
 }
 
 interface InputOrder {
-    req_num : string,
+    req_num: string,
     order_note: string,
     created_by_user_id: number,
     department_id: number,
@@ -82,13 +82,13 @@ const CreateOrderPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [factories, setFactories] = useState<Factory[]>([]);
-    const [selectedFactoryId, setSelectedFactoryId] = useState<number>(-1); 
+    const [selectedFactoryId, setSelectedFactoryId] = useState<number>(-1);
     const selectedFactoryName = factories.find(factory => factory.id === selectedFactoryId)?.name || "Select Factory";
 
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [selectedFactorySectionId, setSelectedFactorySectionId] = useState<number>(-1);
     const selectedFactorySectionName = factorySections.find(section => section.id === selectedFactorySectionId)?.name || "Select Section";
-    
+
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachineId, setSelectedMachineId] = useState<number>(-1);
     const selectedMachineName = machines.find(machine => machine.id === selectedMachineId)?.name || '';
@@ -97,12 +97,11 @@ const CreateOrderPage = () => {
     const selectedDepartmentName = departmentId !== -1 ? departments.find(dept => dept.id === departmentId)?.name : "Select Department";
 
     const [orderType, setOrderType] = useState('');
-    const [description, setDescription] = useState(''); 
-    const [note, setNote] = useState(''); 
+    const [description, setDescription] = useState('');
+    const [note, setNote] = useState('');
 
     const [searchQueryParts, setSearchQueryParts] = useState<string>('');
-    const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false); 
-    const [isSearchMode, setIsSearchMode] = useState(false);
+    const [isPartsSelectOpen, setIsPartsSelectOpen] = useState(false);
 
     const [reqNum, setReqNum] = useState('')
 
@@ -121,9 +120,9 @@ const CreateOrderPage = () => {
     useEffect(() => {
         const loadParts = async () => {
             const fetchedParts = await fetchAllParts();
-            setParts(fetchedParts.data);
+            setParts(fetchedParts);
         };
-    
+
         loadParts();
     }, []);
 
@@ -142,7 +141,7 @@ const CreateOrderPage = () => {
     const [isSampleSentToOffice, setIsSampleSentToOffice] = useState<boolean>();
 
     const [forceRender, setForceRender] = useState<number>(0);
-    const [forcePartRender, setForcePartRender] = useState<number>(0); 
+    const [forcePartRender, setForcePartRender] = useState<number>(0);
     const [forceFactorySectionRender, setForceFactorySectionRender] = useState<number>(0);
     const [forceMachineRender, setForceMachineRender] = useState<number>(0);
 
@@ -156,23 +155,23 @@ const CreateOrderPage = () => {
         qty > 0 &&
         // (orderType !== "Machine" || (selectedFactorySectionId !== -1 && selectedMachineId !== -1)) &&
         isSampleSentToOffice !== null;
-        
+
     const handleResetOrderParts = () => {
         setQty(-1);
         setPartId(-1);
         setIsSampleSentToOffice(false);
         setNote('');
 
-        
-        setForceRender(prev => prev + 1); 
+
+        setForceRender(prev => prev + 1);
         setForcePartRender(prev => prev + 1);
         setForceFactorySectionRender(prev => prev + 1);
-        setForceMachineRender(prev => prev + 1); 
+        setForceMachineRender(prev => prev + 1);
     };
-    
+
 
     const handleCreateOrder = async () => {
-        
+
 
         setIsSubmitting(true);
         try {
@@ -181,20 +180,20 @@ const CreateOrderPage = () => {
                 return;
             }
 
-            if (!profile){
+            if (!profile) {
                 toast.error("No profile found")
                 return
             }
 
-            const fetchedReqNum = (await fetchOrderByReqNumandFactory(reqNum,selectedFactoryId)) ?? [];
+            const fetchedReqNum = (await fetchOrderByReqNumandFactory(reqNum, selectedFactoryId)) ?? [];
             if (fetchedReqNum.length > 0) {
                 toast.error("This Requisition Number has already been used in another order for this factory");
                 setReqNum('');
                 return;
             }
-            
+
             setReqNum(reqNum.trim())
-            const createdById=profile.id;
+            const createdById = profile.id;
             const statusId = 1;
             const orderData: InputOrder = {
                 req_num: reqNum,
@@ -237,31 +236,29 @@ const CreateOrderPage = () => {
             return; // Exit the function to prevent adding the same part
         }
 
-        const storage_data =  await fetchStoragePartQuantityByFactoryID(partId,selectedFactoryId)
-        
-        console.log(storage_data)
-        if (orderType==="Machine" && storage_data.length>0 && storage_data[0].qty>0)
-            {
+        const storage_data = await fetchStoragePartQuantityByFactoryID(partId, selectedFactoryId)
 
-                const newOrderedPart: InputOrderedPart = {
-                    qty: qty,
-                    unit: "",
-                    order_id: 0, // Will be set when the order is created
-                    part_id: partId,
-                    factory_id: selectedFactoryId,
-                    machine_id: selectedMachineId,
-                    factory_section_id: selectedFactorySectionId,
-                    factory_section_name: selectedFactorySectionName,
-                    machine_name: selectedMachineName, 
-                    is_sample_sent_to_office: isSampleSentToOffice ?? false,
-                    note: note.trim() || null, 
-                    in_storage: true,
-                    approved_storage_withdrawal: false
-                };
-                setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
-                handleResetOrderParts();
-            } 
-        else{
+        if (orderType === "Machine" && storage_data.length > 0 && storage_data[0].qty > 0) {
+
+            const newOrderedPart: InputOrderedPart = {
+                qty: qty,
+                unit: "",
+                order_id: 0, // Will be set when the order is created
+                part_id: partId,
+                factory_id: selectedFactoryId,
+                machine_id: selectedMachineId,
+                factory_section_id: selectedFactorySectionId,
+                factory_section_name: selectedFactorySectionName,
+                machine_name: selectedMachineName,
+                is_sample_sent_to_office: isSampleSentToOffice ?? false,
+                note: note.trim() || null,
+                in_storage: true,
+                approved_storage_withdrawal: false
+            };
+            setOrderedParts(prevOrderedParts => [...prevOrderedParts, { ...newOrderedPart }]);
+            handleResetOrderParts();
+        }
+        else {
             const newOrderedPart = {
                 qty: qty,
                 unit: "",
@@ -273,7 +270,7 @@ const CreateOrderPage = () => {
                 factory_section_name: selectedFactorySectionName,
                 machine_name: selectedMachineName,
                 is_sample_sent_to_office: isSampleSentToOffice ?? false,
-                note: note.trim() || null, 
+                note: note.trim() || null,
                 in_storage: false,
                 approved_storage_withdrawal: false
             };
@@ -281,14 +278,12 @@ const CreateOrderPage = () => {
             handleResetOrderParts();
         }
 
-        
+
     };
 
     const handleFinalCreateOrder = async () => {
 
-        console.log("Factory Section in final create order ", selectedFactorySectionId);
 
-        console.log("Machine in final create order ", selectedMachineId);
 
         setIsSubmitting(true);
         try {
@@ -297,27 +292,27 @@ const CreateOrderPage = () => {
                 toast.error("No order details to process.");
                 return;
             }
-            if (!profile){
+            if (!profile) {
                 toast.error("No profile found")
                 return
             }
             let orderResponse;
 
-            
-            if (orderType == "Machine"){
+
+            if (orderType == "Machine") {
                 orderResponse = await insertOrder(
                     tempOrderDetails.req_num,
-                    tempOrderDetails.order_note, 
-                    tempOrderDetails.created_by_user_id, 
-                    tempOrderDetails.department_id, 
-                    tempOrderDetails.factory_id, 
-                    tempOrderDetails.factory_section_id, 
+                    tempOrderDetails.order_note,
+                    tempOrderDetails.created_by_user_id,
+                    tempOrderDetails.department_id,
+                    tempOrderDetails.factory_id,
+                    tempOrderDetails.factory_section_id,
                     tempOrderDetails.machine_id,
                     1, //Current Status
                     tempOrderDetails.order_type,
-                    );
+                );
             }
-            else{
+            else {
                 orderResponse = await insertOrderStorage(
                     tempOrderDetails.req_num,
                     tempOrderDetails.order_note,
@@ -329,7 +324,7 @@ const CreateOrderPage = () => {
                 );
             }
             if (orderResponse.data && orderResponse.data.length > 0) {
-                const orderId = orderResponse.data[0].id; 
+                const orderId = orderResponse.data[0].id;
                 // toast.success(`Order created with ID: ${orderId}, now adding parts...`);
 
                 const partPromises = orderedParts.map(part =>
@@ -348,11 +343,11 @@ const CreateOrderPage = () => {
                 // toast.success("All parts added successfully!");
 
                 setShowPartForm(false);
-                setOrderedParts([]); 
+                setOrderedParts([]);
 
                 await InsertStatusTracker((new Date()), orderId, 1, 1);
                 if (orderType == "Machine") {
-                    setMachineIsRunningById(selectedMachineId,false);
+                    setMachineIsRunningById(selectedMachineId, false);
                 }
             } else {
                 toast.error("Failed to create order.");
@@ -364,7 +359,7 @@ const CreateOrderPage = () => {
             setIsSubmitting(false)
             navigate('/orders');
         }
-};
+    };
     const handleCancelOrder = () => {
         setSelectedFactoryId(-1);
         setDepartmentId(-1);
@@ -384,7 +379,7 @@ const CreateOrderPage = () => {
             const fetchedFactories = await fetchFactories();
             setFactories(fetchedFactories);
         };
-    
+
         loadFactories();
     }, []);
 
@@ -426,16 +421,16 @@ const CreateOrderPage = () => {
                 const sections = await fetchFactorySections(selectedFactoryId);
                 setFactorySections(sections);
             };
-    
+
             loadFactorySections();
         }
-    }, [selectedFactoryId]);  
+    }, [selectedFactoryId]);
 
     useEffect(() => {
         const loadMachines = async () => {
             if (selectedFactorySectionId !== -1) {
                 const fetchedMachines = await fetchAllMachines(selectedFactorySectionId);
-                setMachines(fetchedMachines.data);
+                setMachines(fetchedMachines);
                 setSelectedMachineId(-1); // Reset machine ID when the section changes
                 setTimeout(() => setSelectedMachineId(-1), 0); // Clear and reset
             } else {
@@ -458,14 +453,22 @@ const CreateOrderPage = () => {
         if (isPartsSelectOpen) {
             const loadParts = async () => {
                 const fetchedParts = await fetchAllParts();
-                setParts(fetchedParts.data);
+                setParts(fetchedParts);
             };
 
             loadParts(); // Refetch parts when the dropdown is opened
         }
     }, [isPartsSelectOpen]); // Run when dropdown is opened
 
-    
+    const reloadParts = async () => {
+        try {
+            const fetchedParts = await fetchAllParts();
+            setParts(fetchedParts);
+        } catch (error) {
+            console.error("Failed to reload parts:", error);
+            toast.error("Error loading parts");
+        }
+    };
 
     const handleSelectPart = (value: number) => {
         if (partId === value) {
@@ -507,15 +510,15 @@ const CreateOrderPage = () => {
 
     return (
         <>
-            <NavigationBar/>
+            <NavigationBar />
             <div className="grid flex-1 items-start gap-4 p-5 sm:px-6 sm:py-5 md:gap-8">
                 <Card>
-    
+
                     <CardHeader>
                         <CardTitle>Order Details</CardTitle>
                         <CardDescription>Start creating an order</CardDescription>
                     </CardHeader>
-    
+
                     <CardContent>
                         <div className="grid gap-6">
 
@@ -644,18 +647,18 @@ const CreateOrderPage = () => {
                                 ) : (
                                     <>
                                         {!tempOrderDetails && (
-                                        <Button 
-                                            size="sm"
-                                            className="ml-auto gap-2"
-                                            onClick={handleCreateOrder}
-                                            disabled={!isOrderFormComplete}  // Disable the button
-                                        >
-                                            <CirclePlus className="h-4 w-4" />Start Order
-                                        </Button>
+                                            <Button
+                                                size="sm"
+                                                className="ml-auto gap-2"
+                                                onClick={handleCreateOrder}
+                                                disabled={!isOrderFormComplete}  // Disable the button
+                                            >
+                                                <CirclePlus className="h-4 w-4" />Start Order
+                                            </Button>
                                         )}
                                         <Link to="/orders">
-                                            <Button 
-                                                size="sm" 
+                                            <Button
+                                                size="sm"
                                                 className="ml-auto gap-2"
                                                 onClick={handleCancelOrder}
                                             >
@@ -669,7 +672,7 @@ const CreateOrderPage = () => {
                         </div>
                     </CardContent>
                 </Card>
-    
+
                 {/* PART SELECTION AND DETAILS CARD */}
                 {showPartForm && (
                     <div ref={partsSectionRef}>
@@ -685,11 +688,11 @@ const CreateOrderPage = () => {
                                 <div className="flex flex-col text-left w-1/2">
                                     <CardTitle className="text-lg font-bold">{selectedFactoryName}</CardTitle>
                                     <CardDescription className="text-sm">{
-                                         tempOrderDetails?.order_type === "Storage"
+                                        tempOrderDetails?.order_type === "Storage"
                                             ? "Storage"
                                             : `${factorySections.find(s => s.id === selectedFactorySectionId)?.name || ""} ${tempOrderDetails?.machine_name || "N/A"} `
-                                
-                                }</CardDescription>
+
+                                    }</CardDescription>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -712,13 +715,14 @@ const CreateOrderPage = () => {
                                                     }))}
                                                 onChange={(selectedOption) =>
                                                     handleSelectPart(Number(selectedOption?.value))
-                                                    
+
                                                 }
+                                                onMenuOpen={reloadParts}
                                                 isSearchable
                                                 placeholder="Search or Select a Part"
                                                 value={partId > 0 ? { value: partId, label: parts.find(p => p.id === partId)?.name } : null}
                                                 className="w-[260px]"
-                                                
+
                                             />
                                             {/* Optional Create New Part Button */}
                                             {addPartEnabled && (
@@ -733,9 +737,9 @@ const CreateOrderPage = () => {
                                                 </div>
                                             )}
                                         </div>
-                                       
 
-        
+
+
                                         {/* Setting QTY */}
                                         <div className="flex flex-col space-y-2">
                                             <Label htmlFor="quantity" className="font-medium"> {`Quantity${partId !== -1 ? ` in ${parts.find((p) => p.id === partId)?.unit || ''}` : ''}`}</Label>
@@ -752,8 +756,8 @@ const CreateOrderPage = () => {
                                                 className="input input-bordered w-[220px] max-w-xs p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
-                                        
-                                    
+
+
 
                                         {/* Sample Sent to Office */}
                                         <div className="flex items-center gap-2 leading-none">
@@ -768,7 +772,7 @@ const CreateOrderPage = () => {
                                                 checked={isSampleSentToOffice}
                                                 onCheckedChange={(checked) => setIsSampleSentToOffice(checked === true)}
                                                 className="h-5 w-5 border-gray-300 rounded focus:ring-gray-500 checked:bg-gray-600 checked:border-transparent"
-                                                />
+                                            />
                                             <p className="text-sm text-muted-foreground">
                                                 {isSampleSentToOffice ? "Yes" : "No"}
                                             </p>
@@ -783,12 +787,12 @@ const CreateOrderPage = () => {
                                                 value={note || ''}
                                                 onChange={e => setNote(e.target.value)}
                                                 placeholder="Enter any notes"
-                                                className="min-h-24 w-3/4"  
+                                                className="min-h-24 w-3/4"
                                             />
                                         </div>
 
                                         <div className="flex justify-start">
-                                            <Button 
+                                            <Button
                                                 size="sm"
                                                 onClick={handleAddOrderParts}
                                                 disabled={!isAddPartFormComplete}
@@ -798,17 +802,17 @@ const CreateOrderPage = () => {
                                             </Button>
                                         </div>
                                     </div>
-        
+
                                     {/* Right side: List of Added Parts */}
 
-                                    
+
                                     <div className="space-y-4 p-3">
                                         <h4 className="font-bold mb-2">Added Parts</h4>
                                         <ul className="space-y-2">
                                             {orderedParts.map((part, index) => (
                                                 <li key={index} className="border rounded-lg bg-gray-100 ">
                                                     {/* Top right remove button */}
-                                                    
+
 
                                                     {/* Flex container to align Part and Quantity side by side */}
                                                     <div className="flex justify-between items-center ml-2 mr-2 mt-4 mb-4">
@@ -823,7 +827,7 @@ const CreateOrderPage = () => {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </li>
                                             ))}
                                         </ul>

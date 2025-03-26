@@ -44,7 +44,6 @@ const DamagedPartsPage = () => {
           setLoading(true)
           try {
             const damaged_parts_data = await fetchDamagedPartsByFactoryID(selectedFactoryId, filters.partNameQuery, filters.partIdQuery)
-            console.log(damaged_parts_data)
             setDamagedParts(damaged_parts_data)
           } catch (error) {
             toast.error("Could not filter")

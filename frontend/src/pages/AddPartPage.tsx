@@ -58,7 +58,6 @@ const AddPartPage = () => {
                 if (enabled)
                 {
                     const response = await insertPart(name,unit,description)
-                    console.log(response)
                     if (response){
                         toast.success("Part Added")
         

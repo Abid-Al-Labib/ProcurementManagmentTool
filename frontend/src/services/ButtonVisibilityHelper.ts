@@ -28,6 +28,33 @@ export const showOfficeOrderDenyButton = (status:string): boolean =>{
     return false;
 }
 
+export const showRemovePartButton = (status: string): boolean => {
+    if (status === "Pending") {
+        return true;
+    }
+    return false;
+}
+
+export const showAddPartButton = (status:string): boolean => {
+    if (status === 'Pending'){
+        return true;
+    }
+    else if (status === 'Order Sent To Head Office'){
+        return true;
+    }
+    return false;
+}
+
+export const showUpdatePartQuantityButton = (status:string): boolean => {
+    if (status === 'Pending'){
+        return true;
+    }
+    else if (status === 'Order Sent To Head Office'){
+        return true;
+    }
+    return false;
+}
+
 export const showOfficeOrderChangeQtyButton = (status:string): boolean =>{
     if (status === "Order Sent To Head Office") {
         return true;

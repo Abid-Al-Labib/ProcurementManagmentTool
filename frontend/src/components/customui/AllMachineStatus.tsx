@@ -1,12 +1,13 @@
 // AllMachinesStatus.tsx
 import { useEffect, useState } from "react";
 import { fetchFactories, fetchAllFactorySections } from "@/services/FactoriesService";
-import { fetchEnrichedMachines, fetchMachines } from "@/services/MachineServices";
+import { fetchAllMachines, fetchAllMachinesEnriched, fetchEnrichedMachines } from "@/services/MachineServices";
 import { Loader2 } from "lucide-react";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 
 interface Factory {
     id: number;
@@ -25,39 +26,31 @@ interface Machine {
     is_running: boolean;
     factory: string;
     factory_section_id: number;
-    factory_section_name: string;
 }
 
 interface AllMachinesStatusProps {
     factoryId?: number;
     factorySectionId?: number;
-    handleRowSelection: (factoryId: number, factorySectionId: number, machineId: number) => void;
+    handleRowSelection?: (factoryId: number, factorySectionId: number, machineId: number) => void;
 }
 
-const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factorySectionId, handleRowSelection }) => {
+const AllMachinesStatus = ({ factoryId, factorySectionId, handleRowSelection }: AllMachinesStatusProps) => {
     const [factories, setFactories] = useState<Factory[]>([]);
     const [factorySections, setFactorySections] = useState<FactorySection[]>([]);
     const [machines, setMachines] = useState<Machine[]>([]);
     const [loading, setLoading] = useState(true);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [machinesPerPage] = useState(10);
-    const [totalCount, setTotalCount] = useState(0);
 
     useEffect(() => {
-        setCurrentPage(1); // Reset to the first page whenever factory or factory section changes
-        const fetchAllData = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch factories and factory sections
                 const fetchedFactories = await fetchFactories();
-                setFactories(fetchedFactories);
-                const allSections = await fetchAllFactorySections();
-                setFactorySections(allSections);
+                const fetchedSections = await fetchAllFactorySections();
+                const { data: enrichedMachines } = await fetchAllMachinesEnriched();
 
-                // Fetch machines for the first page
-                await fetchMachinesForPage(1, sortOrder);
+                setFactories(fetchedFactories);
+                setFactorySections(fetchedSections);
+                setMachines(enrichedMachines);
             } catch (error) {
                 console.error("Error fetching data:", error);
             } finally {
@@ -65,158 +58,140 @@ const AllMachinesStatus: React.FC<AllMachinesStatusProps> = ({ factoryId, factor
             }
         };
 
-        fetchAllData();
-    }, [factoryId, factorySectionId]);
-
-    const fetchMachinesForPage = async (page: number, sortOrder: 'asc' | 'desc' | null) => {
-        try {
-            setLoading(true);
-
-            const { data: enrichedMachines, count } = await fetchEnrichedMachines(factoryId ?? -1, factorySectionId ?? -1, page, machinesPerPage, sortOrder);
-            
-            // Set the state with the enriched machine data
-            setMachines(enrichedMachines);
-            setTotalCount(count ?? 0);
-            setTotalPages(Math.ceil((count ?? 0) / machinesPerPage));
-        } catch (error) {
-            console.error("Error fetching machines:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const handleSortByStatus = () => {
-        const newSortOrder = sortOrder === 'asc' ? 'desc' : sortOrder === 'desc' ? null : 'asc';
-        setSortOrder(newSortOrder);
-        setCurrentPage(1); // Reset to the first page whenever sorting changes
-        fetchMachinesForPage(1, newSortOrder);
-    };
-
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-        fetchMachinesForPage(page, sortOrder);
-    };
+        fetchData();
+    }, []);
 
     if (loading) {
         return (
-            <div className="flex justify-center p-5">
-                <Loader2 className="animate-spin" />
+            <div className="flex justify-center items-center min-h-screen">
+                <Loader2 className="animate-spin mr-2" />
                 <span>Loading...</span>
             </div>
         );
     }
 
+    // If no factory is selected, show a message
+    if (factoryId === undefined) {
+        return (
+            <Card className="mt-5">
+                <CardHeader>
+                    <CardTitle>Machine Status Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex justify-center items-center h-32 text-muted-foreground">
+                        Please select a factory to view machine status
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    // Filter machines based on factoryId and factorySectionId
+    const filteredMachines = machines.filter(machine => {
+        if (factoryId !== undefined) {
+            const section = factorySections.find(s => s.id === machine.factory_section_id);
+            if (!section || section.factory_id !== factoryId) return false;
+        }
+        if (factorySectionId !== undefined && machine.factory_section_id !== factorySectionId) {
+            return false;
+        }
+        return true;
+    });
+
+    // Group machines by factory and section
+    const groupedMachines = filteredMachines.reduce((acc, machine) => {
+        const section = factorySections.find(s => s.id === machine.factory_section_id);
+        const factory = factories.find(f => f.id === section?.factory_id);
+        
+        if (!factory || !section) return acc;
+        
+        const key = `${factory.id}-${section.id}`;
+        if (!acc[key]) {
+            acc[key] = {
+                factory: factory.name,
+                section: section.name,
+                machines: []
+            };
+        }
+        acc[key].machines.push(machine);
+        return acc;
+    }, {} as Record<string, { factory: string; section: string; machines: Machine[] }>);
+
+    // Sort machines in each group
+    Object.values(groupedMachines).forEach(group => {
+        group.machines.sort((a, b) => 
+            a.name.localeCompare(b.name, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            })
+        );
+    });
+
     return (
-        <Card className="mb-4">
+        <Card className="mt-5">
             <CardHeader>
-                <CardTitle>All Machines Status</CardTitle>
+                <CardTitle>Machine Status Overview</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
-                    <TableCaption>A list of all machines and their running statuses.</TableCaption>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Factory</TableHead>
-                            <TableHead>Factory Section</TableHead>
-                            <TableHead>Machine Name</TableHead>
-                            <TableHead onClick={handleSortByStatus} className="cursor-pointer">
-                                Status {sortOrder ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
-                            </TableHead>
+                            <TableHead>Section</TableHead>
+                            <TableHead>Machines</TableHead>
+                            <TableHead>Running Status</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {machines.map((machine) => (
-                            <TableRow
-                                key={machine.id}
-                                className="cursor-pointer hover:bg-gray-100"
-                                onClick={() =>
-                                    handleRowSelection(
-                                        factories.find((f) => f.name === machine.factory)?.id ?? -1,
-                                        machine.factory_section_id,
-                                        machine.id
-                                    )
-                                }
-                            >
-                                <TableCell>{machine.factory}</TableCell>
-                                <TableCell>{machine.factory_section_name}</TableCell>
-                                <TableCell>{machine.name}</TableCell>
-                                <TableCell>
-                                    <Badge variant="secondary" className={machine.is_running ? 'bg-green-100' : 'bg-red-100'}>
-                                        {machine.is_running ? "Running" : "Not Running"}
-                                    </Badge>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {Object.entries(groupedMachines).map(([key, group]) => {
+                            const [factoryId, sectionId] = key.split('-').map(Number);
+                            const runningCount = group.machines.filter(m => m.is_running).length;
+                            const totalCount = group.machines.length;
+
+                            return (
+                                <TableRow 
+                                    key={key}
+                                    className="cursor-default"
+                                >
+                                    <TableCell>{group.factory}</TableCell>
+                                    <TableCell>{group.section}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-2">
+                                            {group.machines.map((machine, index) => (
+                                                <Badge
+                                                    key={machine.id}
+                                                    variant="secondary"
+                                                    className={`text-sm cursor-pointer ${
+                                                        machine.is_running
+                                                            ? "bg-green-100 text-green-600"
+                                                            : "bg-red-100 text-red-600"
+                                                    }`}
+                                                    onClick={() => handleRowSelection?.(factoryId, sectionId, machine.id)}
+                                                >
+                                                    {machine.name}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="secondary"
+                                            className={`${
+                                                runningCount === totalCount
+                                                    ? "bg-green-100 text-green-600"
+                                                    : runningCount === 0
+                                                    ? "bg-red-100 text-red-600"
+                                                    : "bg-orange-100 text-orange-600"
+                                            }`}
+                                        >
+                                            {runningCount}/{totalCount} Running
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
-                {/* Pagination Controls */}
-                <div className="flex justify-between items-center w-full text-xs text-muted-foreground mt-4">
-                    <span>
-                        Showing <strong>{(currentPage - 1) * machinesPerPage + 1}</strong> to <strong>{Math.min(currentPage * machinesPerPage, totalCount)}</strong> of <strong>{totalCount}</strong> Machines
-                    </span>
-                    <div className="flex gap-2 overflow-x-auto">
-                        {/* Previous Button */}
-                        <Button
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            Previous
-                        </Button>
-
-                        {/* First Page */}
-                        <Button
-                            size="sm"
-                            variant={currentPage === 1 ? 'default' : 'outline'}
-                            onClick={() => handlePageChange(1)}
-                        >
-                            1
-                        </Button>
-
-                        {/* Ellipses if needed before the current page */}
-                        {currentPage > 4 && <span className="mx-2">...</span>}
-
-                        {/* Pages around the current page (2 before and 2 after) */}
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter(page =>
-                                page >= currentPage - 2 && page <= currentPage + 2 && page !== 1 && page !== totalPages
-                            )
-                            .map((page) => (
-                                <Button
-                                    key={page}
-                                    size="sm"
-                                    variant={currentPage === page ? 'default' : 'outline'}
-                                    onClick={() => handlePageChange(page)}
-                                >
-                                    {page}
-                                </Button>
-                            ))}
-
-                        {/* Ellipses if needed after the current page */}
-                        {currentPage < totalPages - 3 && <span className="mx-2">...</span>}
-
-                        {/* Last Page */}
-                        {totalPages > 1 && (
-                            <Button
-                                size="sm"
-                                variant={currentPage === totalPages ? 'default' : 'outline'}
-                                onClick={() => handlePageChange(totalPages)}
-                            >
-                                {totalPages}
-                            </Button>
-                        )}
-
-                        {/* Next Button */}
-                        <Button
-                            size="sm"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
             </CardContent>
         </Card>
     );

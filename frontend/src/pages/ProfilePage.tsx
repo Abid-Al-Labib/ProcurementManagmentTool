@@ -9,7 +9,6 @@ import { useAuth } from "@/context/AuthContext"
 import { Switch } from "@/components/ui/switch"
 import { useNavigate } from "react-router-dom"
 import { fetchAppSettings, updateEnabledSettings } from "@/services/AppSettingsService"
-import { ApplicationSettings } from "@/types"
 
 const ProfilePage = () => {
     const profile = useAuth().profile

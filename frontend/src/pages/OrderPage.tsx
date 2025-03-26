@@ -1,61 +1,108 @@
-import { useEffect, useState } from 'react';
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { fetchOrders } from "@/services/OrdersService";
+import { supabase_client } from "@/services/SupabaseClient";
+import SearchAndFilter from "@/components/customui/SearchAndFilter";
+import OrdersTableRow from "@/components/customui/OrdersTableRow";
+import { useAuth } from "@/context/AuthContext";
+import { Order } from "@/types";
+import toast from "react-hot-toast";
 import { Loader2, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import NavigationBar from "@/components/customui/NavigationBar";
-import toast from 'react-hot-toast';
-import OrdersTableRow from '@/components/customui/OrdersTableRow';
-import { Order } from '@/types';
-import { fetchOrders } from '@/services/OrdersService';
-import SearchAndFilter from '@/components/customui/SearchAndFilter'; // Import the new component
-import { useAuth } from '@/context/AuthContext';
-import { supabase_client } from '@/services/SupabaseClient';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@radix-ui/react-dropdown-menu';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@radix-ui/react-dropdown-menu";
+import { Filter } from "@/types";
+
 
 
 const OrderPage = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [ordersPerPage] = useState(20); // Set the number of orders per page here
+    const [ordersPerPage] = useState(20);
     const [count, setCount] = useState(0);
-    const [filters, setFilters] = useState<any>({});
-    const [filterSummary, setFilterSummary] = useState<string>(''); // New state for summary
-    const [showCompleted, setShowCompleted] = useState<boolean>(false)
-    const profile = useAuth().profile
+    const profile = useAuth().profile;
 
-    const handleApplyFilters = (newFilters: any, summary: string) => { // Receive the summary
-        console.log('Applied Filters:', newFilters);
-        setFilters(newFilters);
-        setFilterSummary(summary); // Store the filter summary
-        setCurrentPage(1); // Reset page to 1 when filters are applied
-        fetchOrdersforPage(newFilters, 1);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const [showCompleted, setShowCompleted] = useState<boolean>(searchParams.has("showCompleted"));
+
+    const [currentPage, setCurrentPage] = useState(
+        searchParams.get("page") ? Number(searchParams.get("page")) : 1
+    );
+
+    const goToPage = (page: number) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("page", String(page));
+        setSearchParams(params);
     };
+    
+    
+    const filterConfig = [
+        { type: "factory"},
+        { type: "factorySection"},
+        { type: "machine"},
+        { type: "department"},
+        { type: "status"},
+        { type: "id", label: ["Enter ID", "Enter Requisition Number"]},
+        { type: "date"},
+        { type: "orderType"},
+    ];
+    
+    
+    const [filters, setFilters] = useState<Filter>({
+        searchType: searchParams.get("searchType") || "id",
+        searchQuery: searchParams.get("query") || "",
+        reqNumQuery: searchParams.get("reqNum") || "",
+        selectedDate: searchParams.get("date") ? new Date(searchParams.get("date")!) : undefined,
+        dateFilterType: searchParams.get("dateFilterType") ? Number(searchParams.get("dateFilterType")) : 1,
+        selectedFactoryId: searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined,
+        selectedFactorySectionId: searchParams.get("section") ? Number(searchParams.get("section")) : undefined,
+        selectedMachineId: searchParams.get("machine") ? Number(searchParams.get("machine")) : undefined,
+        selectedDepartmentId: searchParams.get("department") ? Number(searchParams.get("department")) : undefined,
+        selectedStatusId: searchParams.get("status") ? Number(searchParams.get("status")) : undefined,
+        selectedOrderType: searchParams.get("orderType") || "all",
+        showCompletedOrders: searchParams.has("showCompleted")
+    });
+    
+    useEffect(() => {
+        setFilters({
+            searchType: searchParams.get("searchType") || "id",
+            searchQuery: searchParams.get("query") || "",
+            reqNumQuery: searchParams.get("reqNum") || "",
+            selectedDate: searchParams.get("date") ? new Date(searchParams.get("date")!) : undefined,
+            dateFilterType: searchParams.get("dateFilterType") ? Number(searchParams.get("dateFilterType")) : 1,
+            selectedFactoryId: searchParams.get("factory") ? Number(searchParams.get("factory")) : undefined,
+            selectedFactorySectionId: searchParams.get("section") ? Number(searchParams.get("section")) : undefined,
+            selectedMachineId: searchParams.get("machine") ? Number(searchParams.get("machine")) : undefined,
+            selectedDepartmentId: searchParams.get("department") ? Number(searchParams.get("department")) : undefined,
+            selectedStatusId: searchParams.get("status") ? Number(searchParams.get("status")) : undefined,
+            selectedOrderType: searchParams.get("orderType") || "all",
+            showCompletedOrders: searchParams.has("showCompleted")
 
-    const fetchOrdersforPage = async (appliedFilters = filters, page = currentPage) => {
-        
+        });
+        setCurrentPage(searchParams.get("page") ? Number(searchParams.get("page")) : 1);
+    }, [searchParams]);
+
+
+    useEffect(() => {
+    fetchOrdersForPage();
+}, [filters, currentPage]); 
+
+
+    const fetchOrdersForPage = async (page = currentPage) => {
+
         try {
             setLoading(true);
             const { data, count } = await fetchOrders({
                 page,
                 limit: ordersPerPage,
                 showCompleted: showCompleted,
-                query: appliedFilters.searchType === 'id' ? appliedFilters.searchQuery : '',
-                reqNum: appliedFilters.reqNumQuery,
-                searchDate: appliedFilters.selectedDate,
-                dateFilterType: appliedFilters.dateFilterType,
-                statusId: appliedFilters.selectedStatusId !== -1 ? appliedFilters.selectedStatusId : undefined,
-                departmentId: appliedFilters.selectedDepartmentId !== -1 ? appliedFilters.selectedDepartmentId : undefined,
-                factoryId: appliedFilters.selectedFactoryId !== -1 ? appliedFilters.selectedFactoryId : undefined,
-                factorySectionId: appliedFilters.selectedFactorySectionId !== -1 ? appliedFilters.selectedFactorySectionId : undefined,
-                machineId: appliedFilters.selectedMachineId !== -1 ? appliedFilters.selectedMachineId : undefined,
-                orderType: appliedFilters.selectedOrderType,
-            
+                filters: filters,
             });
             
             setOrders(data);
@@ -67,15 +114,7 @@ const OrderPage = () => {
             setLoading(false);
         }
     };
-
-    const handleResetFilters = () => {
-        console.log("Resseting filters by the function")
-        setCurrentPage(1);
-        setFilters({});
-        fetchOrdersforPage({}); 
-    };
-
-
+    
 
     useEffect(() => {
         const channel = supabase_client
@@ -89,13 +128,13 @@ const OrderPage = () => {
             },
             () => {
                 console.log("Changes detected, processing realtime")
-                fetchOrdersforPage();
+                fetchOrdersForPage();
             }
         )
         .subscribe()
-        fetchOrdersforPage(filters, currentPage);
+        // fetchOrdersForPage(currentPage);
         
-    }, [currentPage,showCompleted]);
+    }, [currentPage]);
 
     return (
         <>
@@ -107,33 +146,31 @@ const OrderPage = () => {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 w-full">
                                     {/* Search & Filter Button */}
-                                    <SearchAndFilter
-                                        filterConfig={[
-                                            { type: 'factory', label: 'Factory' },
-                                            { type: 'factorySection', label: 'Factory Section' },
-                                            { type: 'machine', label: 'Machine' },
-                                            { type: 'department', label: 'Department' },
-                                            { type: 'status', label: 'Status' },
-                                            { type: 'id', label: 'Enter ID' },
-                                            { type: 'date', label: 'Select Date' },
-                                            { type: 'orderType', label: 'Select Order Type' },
-                                        ]}
-                                        onApplyFilters={handleApplyFilters}
-                                        onResetFilters={handleResetFilters}
-                                    />
-
-                                    
+                                    <SearchAndFilter filterConfig={filterConfig} />
 
                                     {/* Filter Summary */}
-                                    <span className="text-gray-500 text-ss max-w-[150px] md:max-w-[300px] lg:max-w-[400px] truncate overflow-hidden ml-4">
+                                    {/* <span className="text-gray-500 text-ss max-w-[150px] md:max-w-[300px] lg:max-w-[400px] truncate overflow-hidden ml-4">
                                         {filterSummary}
-                                    </span>
+                                    </span> */}
 
                                     <div className="items-top flex space-x-2">
-                                        <Switch
-                                            checked={showCompleted}
-                                            onCheckedChange={() => { setShowCompleted(!showCompleted), setCurrentPage(1) }}
-                                        />
+                                    <Switch
+                                        checked={showCompleted}
+                                        onCheckedChange={() => {
+                                            const newShowCompleted = !showCompleted;
+                                            setShowCompleted(newShowCompleted); 
+                                            
+                                            const params = new URLSearchParams(searchParams);
+                                            if (newShowCompleted) {
+                                                params.set("showCompleted", "true");
+                                            } else {
+                                                params.delete("showCompleted");
+                                            }
+                                            
+                                            setSearchParams(params);
+                                        }}
+                                    />
+
                                         <Label>Show Completed Orders</Label>
                                     </div>
                                 </div>
@@ -184,7 +221,6 @@ const OrderPage = () => {
                                                     {orders.map(order => (
                                                         <OrdersTableRow
                                                             order={order}
-                                                            onDeleteRefresh={() => handleApplyFilters({}, '')}
                                                         />
                                                     ))}
                                                 </TableBody>
@@ -201,7 +237,7 @@ const OrderPage = () => {
                                                 {/* Pagination Buttons */}
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                                    onClick={() => goToPage(currentPage - 1)}
                                                     disabled={currentPage === 1}
                                                 >
                                                     Previous
@@ -211,7 +247,7 @@ const OrderPage = () => {
                                                 <Button
                                                     size="sm"
                                                     variant={currentPage === 1 ? 'default' : 'outline'}
-                                                    onClick={() => setCurrentPage(1)}
+                                                    onClick={() => goToPage(1)}
                                                 >
                                                     1
                                                 </Button>
@@ -229,7 +265,7 @@ const OrderPage = () => {
                                                             key={page}
                                                             size="sm"
                                                             variant={currentPage === page ? 'default' : 'outline'}
-                                                            onClick={() => setCurrentPage(page)}
+                                                            onClick={() => goToPage(page)}
                                                         >
                                                             {page}
                                                         </Button>
@@ -243,7 +279,7 @@ const OrderPage = () => {
                                                     <Button
                                                         size="sm"
                                                         variant={currentPage === totalPages ? 'default' : 'outline'}
-                                                        onClick={() => setCurrentPage(totalPages)}
+                                                        onClick={() => goToPage(totalPages)}
                                                     >
                                                         {totalPages}
                                                     </Button>
@@ -251,7 +287,7 @@ const OrderPage = () => {
 
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                                    onClick={() => goToPage(currentPage + 1)}
                                                     disabled={currentPage === totalPages}
                                                 >
                                                     Next

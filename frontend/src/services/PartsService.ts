@@ -4,32 +4,44 @@ import { supabase_client } from "./SupabaseClient";
 import toast from "react-hot-toast";
 
 
-export const fetchPageParts = async (partId?: string, partName?: string, page = 1, limit = 10) => {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
+export const fetchPageParts = async ({
+    page = 1,
+    partsPerPage = 10,
+    filters = {}
+}: {
+    page: number;
+    partsPerPage: number;
+    filters?: {
+        partIdQuery?: string;
+        partNameQuery?: string;
+    };
+}) => {
+    const from = (page - 1) * partsPerPage;
+    const to = from + partsPerPage - 1;
 
     let queryBuilder = supabase_client
-        .from('parts')
-        .select('*', { count: 'exact' })
+        .from("parts")
+        .select("*", { count: "exact" })
         .range(from, to);
 
-    // Apply filters if partId or partName are provided
-    if (partId) {
-        queryBuilder = queryBuilder.eq('id', partId);
+    // Apply filters dynamically
+    if (filters.partIdQuery) {
+        queryBuilder = queryBuilder.eq("id", filters.partIdQuery);
     }
 
-    if (partName) {
-        queryBuilder = queryBuilder.ilike('name', `%${partName}%`);
+    if (filters.partNameQuery) {
+        queryBuilder = queryBuilder.ilike("name", `%${filters.partNameQuery}%`);
     }
 
-    const { data, count, error } = await queryBuilder.order('name');
+    const { data, count, error } = await queryBuilder.order("name");
 
     if (error) {
         throw new Error(error.message);
     }
 
-    return { data, count };  // Returning data and count directly
+    return { data, count }; //  Returning data and count
 };
+
 
 export const fetchAllParts = async () => {
     const { data, error } = await supabase_client.from('parts').select('*');
@@ -38,7 +50,7 @@ export const fetchAllParts = async () => {
         throw new Error(error.message);
     }
 
-    return { data };  // Returning data and count directly
+    return data as unknown as Part[];  // Returning data and count directly
 };
 
 

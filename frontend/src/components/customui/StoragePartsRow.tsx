@@ -23,7 +23,6 @@ const StoragePartsRow: React.FC<StoragePartsRowProps> = ({ part }) => {
     
     const handleSave = async () => {
         try {
-            console.log(part)
             await editStoragePartQty(part.id, part.factory_id, newQty);
             part.qty = newQty; // Update the part's qty locally
             setIsEditing(false);

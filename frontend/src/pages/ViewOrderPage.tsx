@@ -1,4 +1,4 @@
-import { Link, MemoryRouter, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import StatusTracker from "@/components/customui/StatusTracker";
 import OrderInfo from "@/components/customui/OrderInfo";
@@ -88,20 +88,17 @@ const ViewOrderPage = () => {
               </div>
             </div>
             <div className="w-full mt-4 overflow-x-auto">
-              <OrderedPartsTable mode="view" order={order} current_status={order.statuses} />
+              <OrderedPartsTable mode="view" order={order} parts={[]} current_status={order.statuses} />
             </div>
           </div>
         </main>
         <div className="flex justify-end">
           <div className="my-3 mx-3 flex gap-2">
-            {(profile?.permission === 'admin' || profile?.permission === 'finance') && (
-              <Button 
-                disabled={order?.current_status_id <= 3} 
+              <Button  
                 onClick={CreateInvoice}
               >
                 Create Invoice
               </Button>
-            )}
             <Link to={'/orders'}>
               <Button>Back To Orders</Button>
             </Link>
